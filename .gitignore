@@ -18,3 +18,9 @@ docs/
 .env
 .env.*
 !.env.example
+
+# Brevis prover artifacts (large, regenerable)
+brevis/prover/circuitOut/
+circuitOut/
+kzgsrs/
+node_modules/

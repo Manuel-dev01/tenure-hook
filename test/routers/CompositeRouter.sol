@@ -8,7 +8,7 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencySettler} from "v4-core/test/utils/CurrencySettler.sol";
-import {TransientDeltaReader} from "../../src/libraries/TransientDeltaReader.sol";
+import {TransientDeltaReader} from "../probe/TransientDeltaReader.sol";
 
 /// @title CompositeRouter — the Milestone 0 instrument.
 /// @notice Executes an ordered script of pool operations inside a SINGLE `unlock`, so that

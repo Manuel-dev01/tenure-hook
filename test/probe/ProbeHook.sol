@@ -8,7 +8,7 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
-import {TransientDeltaReader} from "../../src/libraries/TransientDeltaReader.sol";
+import {TransientDeltaReader} from "./TransientDeltaReader.sol";
 
 /// @title ProbeHook — Milestone 0 instrument. Disposable.
 /// @notice Observes the PoolManager's transient flash-accounting state at `beforeSwap` and
