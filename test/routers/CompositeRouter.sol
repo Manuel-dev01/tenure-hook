@@ -54,6 +54,7 @@ contract CompositeRouter is IUnlockCallback {
         int256 liquidityDelta; // ADD_LIQUIDITY
         Currency currency; // TAKE, SETTLE
         uint256 amount; // TAKE, SETTLE
+        bytes hookData; // SWAP, ADD_LIQUIDITY — forwarded to the pool's hook
     }
 
     IPoolManager public immutable manager;
@@ -104,7 +105,7 @@ contract CompositeRouter is IUnlockCallback {
                     // Unbounded: these scenarios are about delta shape, not price limits.
                     sqrtPriceLimitX96: s.zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
                 }),
-                ""
+                s.hookData
             );
         } else if (s.kind == StepKind.ADD_LIQUIDITY) {
             manager.modifyLiquidity(
@@ -115,7 +116,7 @@ contract CompositeRouter is IUnlockCallback {
                     liquidityDelta: s.liquidityDelta,
                     salt: bytes32(0)
                 }),
-                ""
+                s.hookData
             );
         } else if (s.kind == StepKind.TAKE) {
             s.currency.take(manager, address(this), s.amount, false);
