@@ -1,0 +1,176 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+// STAGE 1 DISCRIMINATOR TEST — Roundtrip
+//
+// Setup:
+//   forge init roundtrip && cd roundtrip
+//   forge install uniswap/v4-core uniswap/v4-periphery
+//   (add remappings for v4-core/ and v4-periphery/)
+//   forge test --match-contract Discriminator -vvv
+//
+// Three questions, in order of how much they matter:
+//   Q1. Does hook-local transient storage survive re-entry in one tx?   (expect: yes, trivially)
+//   Q2. Can the hook read the PoolManager's transient deltas mid-swap?  (expect: yes — the real prize)
+//   Q3. Does the delta pattern separate composite ops from retail?      (expect: unknown — this is the experiment)
+//
+// If Q2 fails, Roundtrip is dead. Switch to Tenure. Do not spend a second day on it.
+
+import {Test, console2} from "forge-std/Test.sol";
+import {Deployers} from "v4-core/test/utils/Deployers.sol";
+import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
+import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
+import {BaseHook} from "v4-periphery/src/utils/BaseHook.sol";
+import {Hooks} from "v4-core/src/libraries/Hooks.sol";
+import {PoolKey} from "v4-core/src/types/PoolKey.sol";
+import {Currency} from "v4-core/src/types/Currency.sol";
+import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
+import {IExttload} from "v4-core/src/interfaces/IExttload.sol";
+
+/// @notice Probe hook. Observes only. Prices nothing.
+///         Every swap through it records what the PoolManager's transient state
+///         looked like at beforeSwap time.
+contract ProbeHook is BaseHook {
+    struct Observation {
+        address sender;          // the locker (usually the router, NOT the EOA)
+        uint256 nonzeroDeltas;   // how many currencies the locker is out of balance on
+        int256  deltaCurrency0;  // locker's outstanding delta in this pool's token0
+        int256  deltaCurrency1;  // locker's outstanding delta in this pool's token1
+        bool    sawPriorTouch;   // hook-local transient flag from an earlier leg
+        uint256 legIndex;        // 0 for first touch this tx, 1 for second, etc.
+    }
+
+    Observation[] public observations;
+
+    // Hook-local transient slots (EIP-1153, transaction-scoped, cleared at tx end).
+    bytes32 constant T_TOUCHED   = keccak256("roundtrip.touched");
+    bytes32 constant T_LEG_INDEX = keccak256("roundtrip.legIndex");
+
+    constructor(IPoolManager _pm) BaseHook(_pm) {}
+
+    function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
+        return Hooks.Permissions({
+            beforeInitialize: false, afterInitialize: false,
+            beforeAddLiquidity: false, afterAddLiquidity: false,
+            beforeRemoveLiquidity: false, afterRemoveLiquidity: false,
+            beforeSwap: true, afterSwap: false,
+            beforeDonate: false, afterDonate: false,
+            beforeSwapReturnDelta: false, afterSwapReturnDelta: false,
+            afterAddLiquidityReturnDelta: false, afterRemoveLiquidityReturnDelta: false
+        });
+    }
+
+    function _beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata, bytes calldata)
+        internal
+        override
+        returns (bytes4, BeforeSwapDelta, uint24)
+    {
+        // --- Q1: hook-local transient persistence across legs ---
+        bool touched;
+        uint256 leg;
+        assembly {
+            touched := tload(T_TOUCHED)
+            leg := tload(T_LEG_INDEX)
+        }
+        assembly {
+            tstore(T_TOUCHED, 1)
+            tstore(T_LEG_INDEX, add(leg, 1))
+        }
+
+        // --- Q2: read the PoolManager's OWN transient state from inside the hook ---
+        // NOTE: verify both of these against v4-core source before trusting the output.
+        //   - NonzeroDeltaCount.NONZERO_DELTA_COUNT_SLOT is a constant in
+        //     v4-core/src/libraries/NonzeroDeltaCount.sol
+        //   - the per-(target,currency) delta slot derivation lives in
+        //     v4-core/src/libraries/CurrencyDelta.sol — mirror _computeSlot exactly,
+        //     do NOT guess the preimage layout.
+        uint256 nonzero = _readNonzeroDeltaCount();
+        int256 d0 = _readDelta(sender, key.currency0);
+        int256 d1 = _readDelta(sender, key.currency1);
+
+        observations.push(Observation({
+            sender: sender,
+            nonzeroDeltas: nonzero,
+            deltaCurrency0: d0,
+            deltaCurrency1: d1,
+            sawPriorTouch: touched,
+            legIndex: leg
+        }));
+
+        return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
+    }
+
+    function _readNonzeroDeltaCount() internal view returns (uint256) {
+        bytes32 slot = NONZERO_DELTA_COUNT_SLOT; // import or copy from v4-core
+        return uint256(IExttload(address(poolManager)).exttload(slot));
+    }
+
+    function _readDelta(address target, Currency currency) internal view returns (int256) {
+        bytes32 slot;
+        assembly {
+            mstore(0, target)
+            mstore(32, currency)
+            slot := keccak256(0, 64)
+        }
+        return int256(uint256(IExttload(address(poolManager)).exttload(slot)));
+    }
+
+    function observationCount() external view returns (uint256) { return observations.length; }
+    function clear() external { delete observations; }
+}
+
+contract DiscriminatorTest is Test, Deployers {
+    ProbeHook hook;
+    PoolKey key1; // the probed pool
+    PoolKey key2; // a second pool sharing one currency, for multi-hop routes
+
+    function setUp() public {
+        // deployFreshManagerAndRouters(); deployMintAndApprove2Currencies();
+        // mine a hook address matching the beforeSwap bitmap (CREATE2 — see HookMiner)
+        // initialise key1 with the hook, key2 without
+    }
+
+    // Q1 ------------------------------------------------------------------
+    // Baseline sanity. If this fails, EIP-1153 isn't doing what you think.
+    function test_TransientPersistsAcrossLegsInOneTx() public {
+        // execute two swaps through key1 inside ONE transaction (batched router call)
+        // assert: observation[1].sawPriorTouch == true && observation[1].legIndex == 1
+    }
+
+    function test_TransientClearedBetweenTxs() public {
+        // two swaps in two separate transactions
+        // assert: both observations have sawPriorTouch == false
+        // ^ this is why sandwiches are invisible. Confirm it so you can say it on stage.
+    }
+
+    // Q2 ------------------------------------------------------------------
+    // THE GO/NO-GO. If exttload reverts or returns garbage, Roundtrip is dead.
+    function test_HookCanReadPoolManagerTransientDeltas() public {
+        // single swap through key1
+        // assert: nonzeroDeltas > 0 at beforeSwap time, and d0/d1 are sane
+    }
+
+    // Q3 ------------------------------------------------------------------
+    // THE ACTUAL EXPERIMENT. Everything above just proves the instrument works.
+    function test_Signature_SingleHopRetail() public {
+        // plain swap, EOA -> router -> key1
+        // record nonzeroDeltas. Expect small.
+    }
+
+    function test_Signature_MultiHopThroughProbedPool() public {
+        // route: tokenA -> tokenB (key1) -> tokenC (key2), one tx
+        // record nonzeroDeltas at key1's beforeSwap. Expect larger.
+    }
+
+    function test_Signature_ThirdPartyBatchSettlement() public {
+        // two unrelated users' swaps settled by one solver in one tx.
+        // THIS IS THE FALSE POSITIVE THAT MATTERS. It looks composite. It isn't toxic.
+        // If you cannot separate this from arb, the heuristic is fuzzy and Roundtrip
+        // collapses into a fee dial. Be honest with yourself about the answer.
+    }
+
+    function test_Signature_ZapAddLiquidity() public {
+        // swap half of X into Y, then add liquidity, one tx. Composite but benign.
+    }
+}

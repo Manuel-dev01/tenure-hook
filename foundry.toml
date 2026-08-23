@@ -1,0 +1,22 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+script = "script"
+
+# EIP-1153 (tstore/tload) requires Cancun. The entire Roundtrip thesis rests on
+# transient storage, so this is load-bearing, not incidental. See CLAUDE.md §6.
+solc = "0.8.26"
+evm_version = "cancun"
+
+# Matches v4-core's own profile so our compilation of their sources agrees with theirs.
+optimizer = true
+optimizer_runs = 800
+
+# Deployers + real PoolManager need headroom; v4-core uses 300000000.
+gas_limit = "300000000"
+fs_permissions = [{ access = "read", path = "./out" }]
+
+[profile.default.fuzz]
+runs = 256
