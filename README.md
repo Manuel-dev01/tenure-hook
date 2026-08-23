@@ -1,15 +1,102 @@
-# Roundtrip
+# Tenure
 
-A Uniswap v4 hook that reads the PoolManager's transient flash-accounting state at
-`beforeSwap` and classifies the composite operation the swap is a leg of — structurally,
-while it is still executing, rather than inferring toxicity from statistics after the fact.
+**Depth is the product. Every address pays the same fee; what you earn is how much of the book you
+can reach.**
 
-**Status: Milestone 0.** The foundational assumption is under test and has not yet been
-confirmed. Nothing here prices anything. See `CLAUDE.md` §2 for the go/no-go gate.
+A Uniswap v4 hook where the fee is **identical for every address**, and proven on-chain history
+determines **how much of the book you can take in a single swap**. Standing is proven with a Brevis
+ZK circuit over historical chain data and presented by the trader as an EIP-712 credential.
+
+Standing is an asset the trader holds, not a property the pool assigns. You are not sorted into a
+bracket — you present a credential you earned.
+
+> **Status: Milestone 0.** Gate T2 has passed. Gate T1 is in progress. Nothing here prices anything,
+> and no code path adjusts a fee based on standing — see `CLAUDE.md` §X, which forbids it outright.
+
+---
+
+## Repository history, stated plainly
+
+This repository began as **Roundtrip**, a different hook that was **falsified on 2026-08-23**, one
+day after starting. That negative result is kept here deliberately rather than deleted:
+
+**[`analysis/roundtrip-negative-result.md`](analysis/roundtrip-negative-result.md)**
+
+The short version: a hook can read the PoolManager's transient deltas mid-swap (verified), but it
+cannot classify operations from them, because `beforeSwap` fires at `PoolManager.sol:200` while
+delta accounting happens at `:224`. **A hook never observes an operation — it observes a state
+prefix and infers an operation from it.** Cyclic arbitrage and third-party batch settlement are
+byte-identical at that boundary. The tests still run and still prove it.
+
+Tenure is the successor. Roundtrip's capability is **not** carried into it.
+
+---
+
+## Milestone 0 gates
+
+| Gate | Question | Status |
+|---|---|---|
+| **T1** | Does a Brevis proof round-trip close end-to-end on testnet? | in progress |
+| **T2** | Can the hook bind a swap to a trader unforgeably, and fail closed? | **PASS** — 10/10 |
+
+### T2 — the identity gate
+
+`beforeSwap` receives the locker (router), never the trader. v4-periphery's `IMsgSender.msgSender()`
+exists for this but is **self-reported**, so a malicious router could name any high-standing address
+and take the largest size. Self-reported identity is not identity.
+
+The trader instead signs an EIP-712 `DepthCredential` binding `(locker, poolId, maxSize, nonce,
+deadline)`. The hook recovers the signer and reads *that* address's standing.
+
+Every negative case has its own test, and all revert:
+
+| Case | Error |
+|---|---|
+| forged signature | recovers a different address, whose standing is lower |
+| garbage signature | `InvalidSignature` |
+| missing `hookData` | `MissingCredential` |
+| replayed nonce | `ReplayedNonce` |
+| expired deadline | `ExpiredCredential` |
+| wrong locker | `WrongLocker` |
+| wrong pool | `WrongPool` |
+| over signed `maxSize` | `ExceedsDepthAllowance` |
+
+Nobody is excluded: an address with zero standing still receives a non-zero depth allowance. That
+is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDepthOnly`.
+
+---
+
+## Partner integrations
+
+| Partner | Where | What it does |
+|---|---|---|
+| **Brevis** | [`brevis/prover/circuits/circuit.go`](brevis/prover/circuits/circuit.go) | app circuit proving historical chain activity |
+| **Brevis** | [`brevis/app/src/index.ts`](brevis/app/src/index.ts) | proof request, local proving, gateway submission to Sepolia |
+| **Brevis** | [`brevis/contracts/`](brevis/contracts/) | `BrevisApp` callback receiver |
+| **Uniswap v4** | [`test/gate/TenureGateProbe.sol:beforeSwap`](test/gate/TenureGateProbe.sol) | the hook enforcing depth allowance |
+
+Attribution for vendored upstream code: [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). At the T1
+gate, everything under `brevis/` is upstream's example code, unmodified.
+
+---
+
+## Running the tests
+
+```bash
+forge test --isolate
+```
+
+22 tests across two suites.
+
+| Suite | What it proves |
+|---|---|
+| `TenureIdentityTest` | T2 — identity binding and all fail-closed cases |
+| `DiscriminatorTest` | the Roundtrip falsification, still reproducible |
+
+`--isolate` is required for the cross-transaction half of the Roundtrip Q1 test; without it that
+one test skips loudly rather than passing vacuously.
 
 ## Pinned dependencies
-
-Both are git submodules, pinned to exact commits:
 
 | Dependency | Pin | Commit |
 |---|---|---|
@@ -17,12 +104,11 @@ Both are git submodules, pinned to exact commits:
 | `uniswap/v4-periphery` | `main` | `dce236d4e2057422d0791d9a973a58765eb46f65` |
 | `foundry-rs/forge-std` | tag `v1.16.2` | `bf647bd6046f2f7da30d0c2bf435e5c76a780c1b` |
 
-Compiled with solc `0.8.26`, `evm_version = "cancun"` — EIP-1153 transient storage is
-load-bearing for this project, not incidental.
+solc `0.8.26`, `evm_version = "cancun"`.
 
 ## Attribution
 
-Slot derivations for the PoolManager's transient state are **imported** from v4-core
-(BUSL-1.1), never transcribed — see `src/libraries/TransientDeltaReader.sol`. Test
-scaffolding derives from `v4-core/test/utils/Deployers.sol` and
-`v4-periphery/test/shared/HookMiner.sol`.
+Test scaffolding derives from `v4-core/test/utils/Deployers.sol` and
+`v4-periphery/test/shared/HookMiner.sol`. The transient-delta reader in `test/probe/` **imports**
+v4-core's slot derivations rather than transcribing them. Brevis code under `brevis/` is upstream's;
+see `brevis/ATTRIBUTION.md`.
