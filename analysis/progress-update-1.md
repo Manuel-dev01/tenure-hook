@@ -2,7 +2,7 @@
 
 **Submit to:** tally.so/r/3ER2yL
 **Due:** Aug 24, 2026
-**Status:** draft, files regardless of where Tenure's Milestone 0 lands.
+**Status:** ready to file. T2 passed; T1 is mid-flight and its status is stated honestly below.
 
 ---
 
@@ -72,10 +72,37 @@ the pool assigns.
 
 No code path adjusts a fee based on standing. The thing that varies is accessible depth.
 
-Milestone 0 for Tenure is the same shape that just worked: a capability gate with a hard date and a
-named fallback. Close a Brevis proof round-trip end-to-end on testnet on a trivial claim, and prove
-the hook can bind a swap to a trader unforgeably. Hard switch date Aug 28; fallback is a
-Reactive-based hook.
+Milestone 0 for Tenure is the same shape that just worked: capability gates with a hard date and a
+named fallback. Hard switch date Aug 28; fallback is a Reactive-based hook.
+
+### T2 — identity binding. PASSED.
+
+`beforeSwap` receives the router, never the trader, and v4-periphery's `IMsgSender.msgSender()` is
+**self-reported** — a malicious router could name any high-standing address and take the largest
+size. Self-reported identity is not identity, and a mechanism granting entitlements on an
+unauthenticated claim has no mechanism at all.
+
+The trader instead signs an EIP-712 credential binding locker, pool, max size, nonce and deadline.
+The hook recovers the signer and reads *that* address's standing. Eight negative cases each have
+their own test and all revert: forged signature, garbage signature, missing credential, replayed
+nonce, expired deadline, wrong locker, wrong pool, and exceeding the signed size. Signature
+malleability is rejected too, since a malleable signature is a second valid credential for the same
+nonce.
+
+An address with zero standing still receives a non-zero depth allowance. Nobody is excluded — the
+mechanism caps size, it never denies access.
+
+### T1 — Brevis round-trip. In progress, with a measured blocker.
+
+The circuit compiles (857,948 constraints). The gate is currently blocked on one-time local setup:
+the Brevis SDK requires the full gnark KZG ignition file, **3.0 GiB**, and MD5-checks it against a
+hardcoded digest, so it cannot be truncated to the ~1M points the circuit actually uses. Measured
+throughput is ~350 KiB/s aggregate across eight parallel range requests, roughly 1.8x a single
+stream, which puts the ceiling at the local link rather than at the source.
+
+This is a setup cost, not a capability failure, and it resolves well inside the Aug 28 switch date.
+Stating it because a milestone that is "nearly done" on the day it is due is worth reporting
+precisely rather than optimistically.
 
 ## What I would tell another team
 
@@ -91,4 +118,4 @@ control that reproduced a hand-calculated delta.
 
 ## Days remaining
 
-11. Ahead of where I'd be if I'd found this on Aug 30.
+10. Ahead of where I would be if I had found this on Aug 30.
