@@ -24,3 +24,8 @@ brevis/prover/circuitOut/
 circuitOut/
 kzgsrs/
 node_modules/
+brevis/contracts/artifacts/
+brevis/contracts/cache/
+brevis/contracts/typechain/
+brevis/**/node_modules/
+.env
