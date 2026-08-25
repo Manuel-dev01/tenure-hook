@@ -311,7 +311,7 @@ contract TenureHookTest is Test, Deployers {
     /// @notice The hook holds no fee permission, so it cannot alter execution economics at all.
     /// @dev Fee neutrality is enforced by the mined address, not merely by policy. If
     ///      beforeSwapReturnDelta were ever set, this test fails and §X has been violated.
-    function test_HookHoldsNoFeePermission() public view {
+    function test_FeeParity_HookHoldsNoFeePermission() public view {
         Hooks.Permissions memory p = hook.getHookPermissions();
         assertFalse(p.beforeSwapReturnDelta, "hook must not be able to return a swap delta");
         assertFalse(p.afterSwapReturnDelta, "hook must not be able to return a swap delta");
@@ -323,7 +323,7 @@ contract TenureHookTest is Test, Deployers {
 
     /// @notice Two addresses with different standing are quoted the same fee.
     /// @dev Standing changes accessible depth and nothing else.
-    function test_StandingDoesNotChangeFee() public {
+    function test_FeeParity_StandingDoesNotChangeFee() public {
         hook.setStanding(trader, hook.FULL_DEPTH_STANDING());
         hook.setStanding(eve, 0);
 

@@ -74,10 +74,17 @@ credential is how a trader claims *more* than base, never how they gain entry. A
 
 | Concern | Where |
 |---|---|
-| Depth entitlement + EIP-712 recovery | [`src/TenureHook.sol`](src/TenureHook.sol) |
-| Continuous depth curve | `TenureHook.depthFractionBps` |
-| Credential binding | `TenureHook.DepthCredential` |
+| Depth enforcement at swap time | `src/TenureHook.sol:215` — `_beforeSwap` |
+| Continuous depth curve (no cliffs) | `src/TenureHook.sol:172` — `depthFractionBps` |
+| Credential binding struct | `src/TenureHook.sol:91` — `DepthCredential` |
+| Anti-whitelist floor | `src/TenureHook.sol:48` — `BASE_DEPTH_BPS` |
+| Fee neutrality, structural | `src/TenureHook.sol:136` — `beforeSwapReturnDelta: false` |
 | Stage 1 tests (15) | [`test/TenureHookTest.t.sol`](test/TenureHookTest.t.sol) |
+
+**Forgery is a no-op, not an attack.** A forged signature recovers to the *forger's own* address, so
+they simply get their own standing rather than the victim's. There is nothing to steal: the
+credential names no beneficiary a thief could redirect. Asserted in
+`test_ForgedSignatureGetsForgersStanding`.
 
 ---
 
@@ -128,8 +135,9 @@ is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDe
 | **Brevis** | [`brevis/prover/circuits/circuit.go`](brevis/prover/circuits/circuit.go) | app circuit proving historical chain activity |
 | **Brevis** | [`brevis/app/src/index.ts`](brevis/app/src/index.ts) | proof request, local proving, gateway submission to Sepolia |
 | **Brevis** | [`brevis/contracts/`](brevis/contracts/) | `BrevisApp` callback receiver |
-| **Uniswap v4** | [`src/TenureHook.sol`](src/TenureHook.sol) — `_beforeSwap` | the hook enforcing the depth entitlement |
-| **OpenZeppelin** | [`src/TenureHook.sol`](src/TenureHook.sol) — `is BaseHook` | `uniswap-hooks` v1.0.0 hook base |
+| **Uniswap v4** | `src/TenureHook.sol:215` | `_beforeSwap` enforcing the depth entitlement |
+| **Uniswap v4** | `src/TenureHook.sol:129` | `getHookPermissions` — beforeSwap only, no fee power |
+| **OpenZeppelin** | `src/TenureHook.sol:34` | `uniswap-hooks` v1.0.0 `BaseHook` |
 
 Attribution for vendored upstream code: [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). At the T1
 gate, everything under `brevis/` is upstream's example code, unmodified.
