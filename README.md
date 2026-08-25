@@ -32,6 +32,54 @@ Tenure is the successor. Roundtrip's capability is **not** carried into it.
 
 ---
 
+## Architecture
+
+```
+                  Stage 1 (built)                    Stage 3 (wiring)
+  ┌──────────┐                                    ┌──────────────────┐
+  │  trader  │ ── EIP-712 DepthCredential ──┐     │  Brevis circuit  │
+  └──────────┘    (locker, poolId,          │     │ directional bal. │
+                   maxSize, nonce,          │     └────────┬─────────┘
+                   deadline)                │              │ proof
+                                            ▼              ▼
+  ┌──────────┐    swap + hookData    ┌─────────────────────────────┐
+  │  router  │ ────────────────────► │        TenureHook           │
+  └──────────┘                       │  recovers signer            │
+                                     │  reads standingOf[trader]   │
+                                     │  caps size to depth share   │
+                                     │  NEVER touches the fee      │
+                                     └─────────────────────────────┘
+```
+
+**The entitlement.** Each pool has a **depth tranche** — the most any single swap may consume.
+Standing determines what *fraction* of that tranche a trader can take, rising linearly from 5% at
+zero standing to 100% at full standing. Continuous and monotonic: no brackets, no cliffs, nothing
+to tune.
+
+**Why a signature and not `msgSender()`.** `beforeSwap` receives the locker (router), never the
+trader. v4-periphery exposes `IMsgSender.msgSender()` but it is **self-reported** — a malicious
+router could name any high-standing address. Self-reported identity is not identity, so the trader
+signs an EIP-712 credential binding `(locker, poolId, maxSize, nonce, deadline)` and the hook reads
+the *recovered* signer's standing. Standing is an asset the trader presents, not a property the
+pool assigns.
+
+**Fee neutrality is structural, not policy.** The hook's mined address deliberately omits
+`BEFORE_SWAP_RETURNS_DELTA`, so it *cannot* alter execution economics even if code were added
+trying to. Asserted in `test_HookHoldsNoFeePermission`.
+
+**Nobody is excluded.** A swap presenting no credential at all still executes, at base depth. A
+credential is how a trader claims *more* than base, never how they gain entry. Asserted in
+`test_UnsignedSwapGetsBaseDepth` and `test_NobodyIsExcluded`.
+
+| Concern | Where |
+|---|---|
+| Depth entitlement + EIP-712 recovery | [`src/TenureHook.sol`](src/TenureHook.sol) |
+| Continuous depth curve | `TenureHook.depthFractionBps` |
+| Credential binding | `TenureHook.DepthCredential` |
+| Stage 1 tests (15) | [`test/TenureHookTest.t.sol`](test/TenureHookTest.t.sol) |
+
+---
+
 ## Milestone 0 gates
 
 | Gate | Question | Status |
