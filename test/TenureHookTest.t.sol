@@ -30,12 +30,15 @@ import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
 import {HookMiner} from "v4-periphery/test/shared/HookMiner.sol";
 
 import {TenureHook} from "../src/TenureHook.sol";
+import {OperatorStandingRegistry} from "../src/OperatorStandingRegistry.sol";
+import {IStandingRegistry} from "../src/interfaces/IStandingRegistry.sol";
 import {CompositeRouter} from "./routers/CompositeRouter.sol";
 
 contract TenureHookTest is Test, Deployers {
     using PoolIdLibrary for PoolKey;
 
     TenureHook internal hook;
+    OperatorStandingRegistry internal registry;
     CompositeRouter internal router;
 
     PoolKey internal pool;
@@ -69,13 +72,15 @@ contract TenureHookTest is Test, Deployers {
             ? (Currency.wrap(address(tokens[0])), Currency.wrap(address(tokens[1])))
             : (Currency.wrap(address(tokens[1])), Currency.wrap(address(tokens[0])));
 
+        registry = new OperatorStandingRegistry(operator);
+
         (address hookAddr, bytes32 salt) = HookMiner.find(
             address(this),
             uint160(Hooks.BEFORE_SWAP_FLAG),
             type(TenureHook).creationCode,
-            abi.encode(manager, operator)
+            abi.encode(manager, operator, IStandingRegistry(address(registry)))
         );
-        hook = new TenureHook{salt: salt}(manager, operator);
+        hook = new TenureHook{salt: salt}(manager, operator, IStandingRegistry(address(registry)));
         require(address(hook) == hookAddr, "hook address mining failed");
 
         router = new CompositeRouter(manager);
@@ -186,7 +191,7 @@ contract TenureHookTest is Test, Deployers {
 
     /// @notice Standing raises accessible depth, and a credential unlocks it.
     function test_StandingRaisesAccessibleDepth() public {
-        hook.setStanding(trader, hook.FULL_DEPTH_STANDING());
+        registry.setStanding(trader, uint16(hook.FULL_DEPTH_STANDING()), 20);
         assertEq(hook.maxSwapSize(pool, trader), TRANCHE, "full standing reaches the whole tranche");
 
         TenureHook.DepthCredential memory c = _credential(TRANCHE, 1, block.timestamp + 1 hours);
@@ -197,7 +202,7 @@ contract TenureHookTest is Test, Deployers {
 
     /// @notice A swap above the trader's earned depth reverts, even with a valid credential.
     function test_CapEnforcedAboveStanding() public {
-        hook.setStanding(trader, 5000); // half way => 5250bps => 52.5e18
+        registry.setStanding(trader, 5000, 20); // half way => 5250bps => 52.5e18
         uint256 allowed = hook.maxSwapSize(pool, trader);
         assertEq(allowed, 52.5e18, "linear interpolation, no cliff");
 
@@ -227,7 +232,7 @@ contract TenureHookTest is Test, Deployers {
 
     /// @notice A credential cannot be stretched past the size the trader signed for.
     function test_CannotExceedSignedMaxSize() public {
-        hook.setStanding(trader, hook.FULL_DEPTH_STANDING());
+        registry.setStanding(trader, uint16(hook.FULL_DEPTH_STANDING()), 20);
         TenureHook.DepthCredential memory c = _credential(10e18, 1, block.timestamp + 1 hours);
         bytes memory data = abi.encode(c, _sign(traderKey, c));
         _expectHookRevert(abi.encodeWithSelector(TenureHook.ExceedsDepthAllowance.selector, 20e18, 10e18));
@@ -240,7 +245,7 @@ contract TenureHookTest is Test, Deployers {
 
     /// @notice A credential is single-use.
     function test_ReplayedNonceReverts() public {
-        hook.setStanding(trader, hook.FULL_DEPTH_STANDING());
+        registry.setStanding(trader, uint16(hook.FULL_DEPTH_STANDING()), 20);
         TenureHook.DepthCredential memory c = _credential(TRANCHE, 7, block.timestamp + 1 hours);
         bytes memory data = abi.encode(c, _sign(traderKey, c));
 
@@ -253,7 +258,7 @@ contract TenureHookTest is Test, Deployers {
 
     /// @notice An expired credential reverts. A replayable signature is a cap that never expires.
     function test_ExpiredDeadlineReverts() public {
-        hook.setStanding(trader, hook.FULL_DEPTH_STANDING());
+        registry.setStanding(trader, uint16(hook.FULL_DEPTH_STANDING()), 20);
         TenureHook.DepthCredential memory c = _credential(TRANCHE, 1, block.timestamp + 1 hours);
         bytes memory data = abi.encode(c, _sign(traderKey, c));
 
@@ -269,7 +274,7 @@ contract TenureHookTest is Test, Deployers {
 
     /// @notice Eve signing the trader's credential gets EVE's standing, not the trader's.
     function test_ForgedSignatureGetsForgersStanding() public {
-        hook.setStanding(trader, hook.FULL_DEPTH_STANDING());
+        registry.setStanding(trader, uint16(hook.FULL_DEPTH_STANDING()), 20);
         TenureHook.DepthCredential memory c = _credential(TRANCHE, 1, block.timestamp + 1 hours);
         bytes memory data = abi.encode(c, _sign(eveKey, c));
 
@@ -324,8 +329,8 @@ contract TenureHookTest is Test, Deployers {
     /// @notice Two addresses with different standing are quoted the same fee.
     /// @dev Standing changes accessible depth and nothing else.
     function test_FeeParity_StandingDoesNotChangeFee() public {
-        hook.setStanding(trader, hook.FULL_DEPTH_STANDING());
-        hook.setStanding(eve, 0);
+        registry.setStanding(trader, uint16(hook.FULL_DEPTH_STANDING()), 20);
+        registry.setStanding(eve, 0, 20);
 
         // Same pool, same fee tier, regardless of who is swapping.
         assertEq(pool.fee, 3000, "fee is a property of the pool, not the trader");

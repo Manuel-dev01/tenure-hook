@@ -8,6 +8,7 @@ import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
+import {IStandingRegistry} from "./interfaces/IStandingRegistry.sol";
 
 /// @title TenureHook
 /// @notice Depth is the product. Every address pays the same fee; what you earn is how much of the
@@ -28,9 +29,11 @@ import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeS
 ///      This is the difference between Tenure and an allowlist, and it is enforced in code rather
 ///      than promised in prose.
 ///
-/// @dev STAGE 1: standing is written by the pool operator via `setStanding`. Stage 3 replaces that
-///      writer with a Brevis-backed registry validating `_vkHash`. The hook's read path does not
-///      change when that happens.
+/// @dev WHERE STANDING COMES FROM. The hook reads `IStandingRegistry` and does not care how the
+///      value got there. In stage 1 an operator wrote it directly; from stage 3 a Brevis ZK
+///      callback does, with `_vkHash` validated. Because the read path is identical either way,
+///      the hook remains shippable even if proving is unavailable — the operator-written registry
+///      is a complete, honest fallback rather than a mock.
 contract TenureHook is BaseHook {
     using PoolIdLibrary for PoolKey;
 
@@ -58,8 +61,8 @@ contract TenureHook is BaseHook {
     /// @dev Set by the operator per pool. Zero means the pool is unconfigured and unrestricted.
     mapping(PoolId => uint256) public depthTranche;
 
-    /// @notice Proven standing per address. Stage 1: operator-written. Stage 3: registry-written.
-    mapping(address => uint256) public standingOf;
+    /// @notice Where proven standing is read from. Swappable without touching swap-time logic.
+    IStandingRegistry public registry;
 
     /// @notice Consumed credential nonces, per trader.
     mapping(address => mapping(uint256 => bool)) public nonceUsed;
@@ -104,7 +107,7 @@ contract TenureHook is BaseHook {
     error InvalidSignature();
     error ExceedsDepthAllowance(uint256 requested, uint256 allowed);
 
-    event StandingUpdated(address indexed trader, uint256 standing);
+    event RegistryUpdated(address indexed registry);
     event DepthTrancheUpdated(PoolId indexed poolId, uint256 tranche);
     event DepthConsumed(address indexed trader, PoolId indexed poolId, uint256 size, uint256 allowed);
 
@@ -113,8 +116,9 @@ contract TenureHook is BaseHook {
         _;
     }
 
-    constructor(IPoolManager _poolManager, address _operator) BaseHook(_poolManager) {
+    constructor(IPoolManager _poolManager, address _operator, IStandingRegistry _registry) BaseHook(_poolManager) {
         operator = _operator;
+        registry = _registry;
     }
 
     /// @inheritdoc BaseHook
@@ -144,12 +148,20 @@ contract TenureHook is BaseHook {
     // operator surface (Stage 1; replaced by the Brevis registry in Stage 3)
     // -------------------------------------------------------------------------------------
 
-    /// @notice Record an address's proven standing.
-    /// @param trader The address whose standing is being recorded.
-    /// @param standing The standing value.
-    function setStanding(address trader, uint256 standing) external onlyOperator {
-        standingOf[trader] = standing;
-        emit StandingUpdated(trader, standing);
+    /// @notice Point the hook at a different standing source.
+    /// @dev Used to swap the stage-1 operator registry for the Brevis-backed one. It cannot change
+    ///      fees, only where depth entitlement is read from.
+    /// @param _registry The new registry.
+    function setRegistry(IStandingRegistry _registry) external onlyOperator {
+        registry = _registry;
+        emit RegistryUpdated(address(_registry));
+    }
+
+    /// @notice Standing for an address, as reported by the current registry.
+    /// @param trader The address to look up.
+    function standingOf(address trader) public view returns (uint256) {
+        if (address(registry) == address(0)) return 0;
+        return registry.standingOf(trader);
     }
 
     /// @notice Configure the maximum a single swap may consume on a pool.
@@ -181,7 +193,7 @@ contract TenureHook is BaseHook {
     function maxSwapSize(PoolKey calldata key, address trader) public view returns (uint256) {
         uint256 tranche = depthTranche[key.toId()];
         if (tranche == 0) return type(uint256).max;
-        return (tranche * depthFractionBps(standingOf[trader])) / BPS;
+        return (tranche * depthFractionBps(standingOf(trader))) / BPS;
     }
 
     /// @notice The EIP-712 domain separator for this hook instance.
@@ -251,7 +263,7 @@ contract TenureHook is BaseHook {
         // else: trader stays address(0), whose standing is 0, which yields BASE_DEPTH_BPS.
 
         // The stricter of what standing earns and what the trader authorised.
-        uint256 allowed = (tranche * depthFractionBps(standingOf[trader])) / BPS;
+        uint256 allowed = (tranche * depthFractionBps(standingOf(trader))) / BPS;
         if (signedCap < allowed) allowed = signedCap;
 
         if (requested > allowed) revert ExceedsDepthAllowance(requested, allowed);

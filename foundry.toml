@@ -3,7 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 test = "test"
-script = "script"
+script = "scripts"
 
 # EIP-1153 (tstore/tload) requires Cancun. The entire Roundtrip thesis rests on
 # transient storage, so this is load-bearing, not incidental. See CLAUDE.md §6.

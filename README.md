@@ -86,6 +86,28 @@ they simply get their own standing rather than the victim's. There is nothing to
 credential names no beneficiary a thief could redirect. Asserted in
 `test_ForgedSignatureGetsForgersStanding`.
 
+### Standing is undefined below 20 swaps
+
+Directional balance over a handful of trades is noise: at four swaps a single extra trade moves it
+5,000 bps. Rather than choose a lookback window that flatters the result, an address below **20
+observed swaps has no standing** and receives base depth alongside every unsigned swapper. N was
+derived from the metric's own arithmetic — one further swap must not move balance by more than 500
+bps, so `10000/(N+1) ≤ 500` — and **recorded before any numbers were run at any N**
+([`analysis/minimum-sample-decision.md`](analysis/minimum-sample-decision.md)).
+
+This removes the last free parameter: there is no lookback to pick, only a threshold on evidence
+sufficiency, which separates *measured* from *not yet measured* rather than good traders from bad.
+
+### Known limitation: proofs run against a historical block range
+
+`brevis-sdk v0.3.12` cannot build receipt proofs for blocks containing **EIP-7702 (type 4)**
+transactions, which are present in current mainnet blocks. Measured, not assumed: the failing range
+carried 12 type-4 transactions, the pinned range zero. Blob transactions are *not* the problem — they
+appear in the working range too.
+
+Proofs are therefore generated against a pinned pre-Pectra range, anchored at block **21,146,236**.
+See [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md).
+
 ---
 
 ## Milestone 0 gates
@@ -135,6 +157,8 @@ is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDe
 | **Brevis** | [`brevis/prover/circuits/circuit.go`](brevis/prover/circuits/circuit.go) | app circuit proving historical chain activity |
 | **Brevis** | [`brevis/app/src/index.ts`](brevis/app/src/index.ts) | proof request, local proving, gateway submission to Sepolia |
 | **Brevis** | [`brevis/contracts/`](brevis/contracts/) | `BrevisApp` callback receiver |
+| **Brevis** | `src/TenureRegistry.sol:88` | `handleProofResult` — ZK callback, `_vkHash` validated |
+| **Brevis** | `src/lib/BrevisAppZkOnly.sol:9` | vendored `BrevisAppZkOnly` callback base |
 | **Uniswap v4** | `src/TenureHook.sol:215` | `_beforeSwap` enforcing the depth entitlement |
 | **Uniswap v4** | `src/TenureHook.sol:129` | `getHookPermissions` — beforeSwap only, no fee power |
 | **OpenZeppelin** | `src/TenureHook.sol:34` | `uniswap-hooks` v1.0.0 `BaseHook` |
@@ -150,11 +174,12 @@ gate, everything under `brevis/` is upstream's example code, unmodified.
 forge test --isolate
 ```
 
-37 tests across three suites.
+47 tests across four suites.
 
 | Suite | Tests | What it proves |
 |---|---|---|
 | `TenureHookTest` | 15 | Stage 1 — the depth entitlement, credential binding, fee neutrality |
+| `TenureRegistryTest` | 10 | Stage 3 — `_vkHash` validation and the minimum-sample rule |
 | `TenureIdentityTest` | 10 | T2 — identity binding and all fail-closed cases |
 | `DiscriminatorTest` | 12 | the Roundtrip falsification, still reproducible |
 
