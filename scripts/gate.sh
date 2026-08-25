@@ -96,7 +96,9 @@ ls src/ 2>/dev/null | grep -iE 'governance|token|frontend|oracle|ml|score' >"$TM
 # series appears in the circuit, the claim has drifted back to adverse-selection
 # scoring and must stop.
 if [ "$STAGE" -ge 2 ]; then
-  grep -rniE 'price|oracle|twap|sqrtPrice' brevis/prover/circuits/ >"$TMP/gate_price.log" 2>/dev/null
+  # Strip // comments first: the circuit's own docs explain WHY it uses no price data, and
+  # matching those words in prose would be a false positive. What matters is executable code.
+  find brevis/prover/circuits -name '*.go' -not -name '*_test.go' -print0 2>/dev/null     | xargs -0 -r sed 's://.*::'     | grep -niE 'price|oracle|twap|sqrtPrice' >"$TMP/gate_price.log" 2>/dev/null
   [ ! -s "$TMP/gate_price.log" ]; check $? "circuit uses no price data (claim has not drifted)"
 else
   skip 2 "circuit price-drift check"
