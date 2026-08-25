@@ -18,7 +18,11 @@ func main() {
 	proverService, err := prover.NewService(&circuits.AppCircuit{}, prover.ServiceConfig{
 		SetupDir: "$HOME/circuitOut",
 		SrsDir:   "$HOME/kzgsrs",
-		RpcURL:   "https://eth.llamarpc.com",
+		// TENURE CHANGE (2026-08-25): upstream default was https://eth.llamarpc.com,
+		// whose origin returned Cloudflare 521 and aborted prover startup AFTER a
+		// successful setup. Swapped for a public endpoint verified responding to
+		// eth_blockNumber. Nothing else in this file is ours.
+		RpcURL:   "https://ethereum-rpc.publicnode.com",
 		ChainId:  1,
 	})
 	if err != nil {

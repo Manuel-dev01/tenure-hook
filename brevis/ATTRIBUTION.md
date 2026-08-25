@@ -20,3 +20,13 @@ a header saying so. The Tenure standing circuit, when written, replaces
 
 Per the UHI10 binary gate on uncredited code: nothing in this directory is claimed as original work
 unless its header says otherwise.
+
+---
+
+## Our changes to upstream code
+
+| File | Change | Date |
+|---|---|---|
+| `prover/cmd/main.go` | `RpcURL` swapped from `https://eth.llamarpc.com` (origin returning Cloudflare 521, aborting prover startup after a successful setup) to `https://ethereum-rpc.publicnode.com`, verified responding to `eth_blockNumber`. Marked inline with a `TENURE CHANGE` comment. | 2026-08-25 |
+
+Everything else under `brevis/` remains upstream's, unmodified.
