@@ -10,8 +10,9 @@ ZK circuit over historical chain data and presented by the trader as an EIP-712 
 Standing is an asset the trader holds, not a property the pool assigns. You are not sorted into a
 bracket — you present a credential you earned.
 
-> **Status: Milestone 0.** Gate T2 has passed. Gate T1 is in progress. Nothing here prices anything,
-> and no code path adjusts a fee based on standing — see `CLAUDE.md` §X, which forbids it outright.
+> **Status: Stage 1 complete.** The hook works standalone with operator-set standing. Capability
+> gates T1a and T2 have both passed. Nothing here prices anything, and no code path adjusts a fee
+> based on standing — see `CLAUDE.md` §X, which forbids it outright.
 
 ---
 
@@ -84,8 +85,14 @@ credential is how a trader claims *more* than base, never how they gain entry. A
 
 | Gate | Question | Status |
 |---|---|---|
-| **T1** | Does a Brevis proof round-trip close end-to-end on testnet? | in progress |
+| **T1a** | Does local Brevis proving work — compile, key-gen, prove, verify? | **PASS** |
+| **T1b** | Does gateway submission reach Sepolia? | blocked by a Brevis-side gateway outage. **Not a gate** — deployment is not required by the rules |
 | **T2** | Can the hook bind a swap to a trader unforgeably, and fail closed? | **PASS** — 10/10 |
+
+T1a evidence: circuit 857,942 constraints, setup 13.6s, vk hash
+`0x1cb76a97800eca38048ce06ba3199638113b0218e56ed9c9b212fbedbd8a79fc`, proof generated **and verified
+against the vk** twice (the prover's `prove()` returns an error rather than a proof if verification
+fails, so proof output *is* verification).
 
 ### T2 — the identity gate
 
@@ -102,7 +109,7 @@ Every negative case has its own test, and all revert:
 |---|---|
 | forged signature | recovers a different address, whose standing is lower |
 | garbage signature | `InvalidSignature` |
-| missing `hookData` | `MissingCredential` |
+| missing `hookData` | *(probe only)* `MissingCredential` — the production `TenureHook` instead grants **base depth**, see Architecture |
 | replayed nonce | `ReplayedNonce` |
 | expired deadline | `ExpiredCredential` |
 | wrong locker | `WrongLocker` |
@@ -121,7 +128,8 @@ is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDe
 | **Brevis** | [`brevis/prover/circuits/circuit.go`](brevis/prover/circuits/circuit.go) | app circuit proving historical chain activity |
 | **Brevis** | [`brevis/app/src/index.ts`](brevis/app/src/index.ts) | proof request, local proving, gateway submission to Sepolia |
 | **Brevis** | [`brevis/contracts/`](brevis/contracts/) | `BrevisApp` callback receiver |
-| **Uniswap v4** | [`test/gate/TenureGateProbe.sol:beforeSwap`](test/gate/TenureGateProbe.sol) | the hook enforcing depth allowance |
+| **Uniswap v4** | [`src/TenureHook.sol`](src/TenureHook.sol) — `_beforeSwap` | the hook enforcing the depth entitlement |
+| **OpenZeppelin** | [`src/TenureHook.sol`](src/TenureHook.sol) — `is BaseHook` | `uniswap-hooks` v1.0.0 hook base |
 
 Attribution for vendored upstream code: [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). At the T1
 gate, everything under `brevis/` is upstream's example code, unmodified.
@@ -134,12 +142,13 @@ gate, everything under `brevis/` is upstream's example code, unmodified.
 forge test --isolate
 ```
 
-22 tests across two suites.
+37 tests across three suites.
 
-| Suite | What it proves |
-|---|---|
-| `TenureIdentityTest` | T2 — identity binding and all fail-closed cases |
-| `DiscriminatorTest` | the Roundtrip falsification, still reproducible |
+| Suite | Tests | What it proves |
+|---|---|---|
+| `TenureHookTest` | 15 | Stage 1 — the depth entitlement, credential binding, fee neutrality |
+| `TenureIdentityTest` | 10 | T2 — identity binding and all fail-closed cases |
+| `DiscriminatorTest` | 12 | the Roundtrip falsification, still reproducible |
 
 `--isolate` is required for the cross-transaction half of the Roundtrip Q1 test; without it that
 one test skips loudly rather than passing vacuously.
@@ -151,6 +160,10 @@ one test skips loudly rather than passing vacuously.
 | `uniswap/v4-core` | tag `v4.0.0` | `e50237c43811bd9b526eff40f26772152a42daba` |
 | `uniswap/v4-periphery` | `main` | `dce236d4e2057422d0791d9a973a58765eb46f65` |
 | `foundry-rs/forge-std` | tag `v1.16.2` | `bf647bd6046f2f7da30d0c2bf435e5c76a780c1b` |
+| `OpenZeppelin/uniswap-hooks` | tag `v1.0.0` | `1db96464698ee567521bd2dd65833ff1e1864ac7` |
+
+`uniswap-hooks` is pinned to v1.0.0 rather than latest: v1.2.x imports `SwapParams` from
+`v4-core/src/types/PoolOperation.sol`, which does not exist in our pinned v4-core `v4.0.0`.
 
 solc `0.8.26`, `evm_version = "cancun"`.
 
