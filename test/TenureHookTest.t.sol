@@ -145,6 +145,25 @@ contract TenureHookTest is Test, Deployers {
         router.execute(steps, net);
     }
 
+
+    /// @dev Execute several swaps in ONE transaction (one unlock), each with its own hookData.
+    ///      This is the split attack: without a per-transaction meter, N cap-sized swaps take N
+    ///      times the cap at near-zero extra cost.
+    function _swapMany(int256[] memory amounts, bytes[] memory datas) internal {
+        CompositeRouter.Step[] memory steps = new CompositeRouter.Step[](amounts.length);
+        for (uint256 i = 0; i < amounts.length; i++) {
+            steps[i].kind = CompositeRouter.StepKind.SWAP;
+            steps[i].key = pool;
+            steps[i].zeroForOne = true;
+            steps[i].amountSpecified = amounts[i];
+            steps[i].hookData = datas[i];
+        }
+        Currency[] memory net = new Currency[](2);
+        net[0] = pool.currency0;
+        net[1] = pool.currency1;
+        router.execute(steps, net);
+    }
+
     /// @dev v4 wraps hook reverts in `CustomRevert.WrappedError`; asserting the bare selector would
     ///      pass on the wrong error. This rebuilds the wrapper so each test pins its exact failure.
     function _expectHookRevert(bytes memory innerError) internal {
@@ -335,5 +354,128 @@ contract TenureHookTest is Test, Deployers {
         // Same pool, same fee tier, regardless of who is swapping.
         assertEq(pool.fee, 3000, "fee is a property of the pool, not the trader");
         assertGt(hook.maxSwapSize(pool, trader), hook.maxSwapSize(pool, eve), "only depth differs");
+    }
+
+    // =======================================================================================
+    // STAGE 3.5 — the per-transaction depth meter
+    //
+    // Without this, the cap is cosmetic: sign several credentials, split one large take into N
+    // cap-sized swaps in one transaction, pay almost nothing extra. "Depth is the product" would
+    // gate nothing at all.
+    // =======================================================================================
+
+    /// @notice Credentialed splitting reverts once the cumulative entitlement is crossed.
+    /// @dev THE ATTACK THIS STAGE EXISTS TO STOP.
+    function test_Meter_CredentialedSplittingRevertsAtCap() public {
+        registry.setStanding(trader, 5000, 20); // entitled = 52.5e18
+        uint256 entitled = hook.maxSwapSize(pool, trader);
+        assertEq(entitled, 52.5e18, "entitlement");
+
+        // Three swaps of 20e18 = 60e18 > 52.5e18. The third must fail.
+        int256[] memory amounts = new int256[](3);
+        bytes[] memory datas = new bytes[](3);
+        for (uint256 i = 0; i < 3; i++) {
+            amounts[i] = -int256(20e18);
+            TenureHook.DepthCredential memory c = _credential(entitled, i + 1, block.timestamp + 1 hours);
+            datas[i] = abi.encode(c, _sign(traderKey, c));
+        }
+
+        // consumed 40e18, remaining 12.5e18, requesting 20e18
+        _expectHookRevert(
+            abi.encodeWithSelector(TenureHook.DepthExhaustedThisTx.selector, uint256(20e18), uint256(12.5e18))
+        );
+        _swapMany(amounts, datas);
+    }
+
+    /// @notice Multiple credentials from one trader do not stack the ceiling.
+    /// @dev Consumption is keyed to the recovered trader, not the credential, and checked against
+    ///      the standing entitlement — so minting more signatures buys nothing.
+    function test_Meter_TwoCredentialsDoNotStack() public {
+        registry.setStanding(trader, 0, 20); // base only: 5e18
+        uint256 entitled = hook.maxSwapSize(pool, trader);
+        assertEq(entitled, BASE_ALLOWED, "base entitlement");
+
+        int256[] memory amounts = new int256[](2);
+        bytes[] memory datas = new bytes[](2);
+        for (uint256 i = 0; i < 2; i++) {
+            amounts[i] = -int256(BASE_ALLOWED);
+            // Each credential authorises the full base amount, with a distinct nonce.
+            TenureHook.DepthCredential memory c = _credential(BASE_ALLOWED, i + 1, block.timestamp + 1 hours);
+            datas[i] = abi.encode(c, _sign(traderKey, c));
+        }
+
+        _expectHookRevert(
+            abi.encodeWithSelector(TenureHook.DepthExhaustedThisTx.selector, BASE_ALLOWED, uint256(0))
+        );
+        _swapMany(amounts, datas);
+    }
+
+    /// @notice Unsigned swaps are metered too. Anonymity is not an exemption.
+    /// @dev If unsigned swaps were exempt, the cheapest route to the whole book would be to sign
+    ///      NOTHING and split at base depth — making standing strictly worse than no standing and
+    ///      running the mechanism backwards. This test makes that defect impossible to reintroduce
+    ///      silently.
+    function test_Meter_UnsignedSplittingRevertsAtBaseCap() public {
+        int256[] memory amounts = new int256[](2);
+        bytes[] memory datas = new bytes[](2);
+        amounts[0] = -int256(BASE_ALLOWED);
+        amounts[1] = -int256(BASE_ALLOWED);
+        datas[0] = "";
+        datas[1] = "";
+
+        _expectHookRevert(
+            abi.encodeWithSelector(TenureHook.DepthExhaustedThisTx.selector, BASE_ALLOWED, uint256(0))
+        );
+        _swapMany(amounts, datas);
+    }
+
+    /// @notice A zero-standing signer is valid, gets base depth, and carries their own bucket.
+    /// @dev The permissionless escape: a user a router would otherwise batch into a shared
+    ///      anonymous bucket can sign for free and be metered separately. No standing required.
+    function test_Meter_ZeroStandingCredentialGetsItsOwnBucket() public {
+        // eve has no standing recorded at all.
+        assertEq(hook.standingOf(eve), 0, "no standing");
+
+        // An unsigned swap consumes the anonymous bucket...
+        int256[] memory amounts = new int256[](2);
+        bytes[] memory datas = new bytes[](2);
+        amounts[0] = -int256(BASE_ALLOWED);
+        datas[0] = "";
+        // ...and eve, signing with zero standing, still gets a full base allowance of her own.
+        amounts[1] = -int256(BASE_ALLOWED);
+        TenureHook.DepthCredential memory c = _credential(BASE_ALLOWED, 1, block.timestamp + 1 hours);
+        datas[1] = abi.encode(c, _sign(eveKey, c));
+
+        _swapMany(amounts, datas); // must NOT revert
+
+        assertEq(hook.consumedDepthThisTx(address(0)), 0, "accumulator cleared after the tx");
+    }
+
+    /// @notice The meter clears between transactions.
+    /// @dev Q1's cross-transaction property, applied here. Requires --isolate; gate.sh enforces it.
+    function test_Meter_ClearsBetweenTransactions() public {
+        registry.setStanding(trader, 0, 20);
+
+        TenureHook.DepthCredential memory c1 = _credential(BASE_ALLOWED, 1, block.timestamp + 1 hours);
+        _swap(-int256(BASE_ALLOWED), abi.encode(c1, _sign(traderKey, c1)));
+
+        // A second transaction gets a fresh allowance rather than a spent one.
+        TenureHook.DepthCredential memory c2 = _credential(BASE_ALLOWED, 2, block.timestamp + 1 hours);
+        _swap(-int256(BASE_ALLOWED), abi.encode(c2, _sign(traderKey, c2)));
+    }
+
+    /// @notice Swapping within the entitlement is never restricted by the meter.
+    /// @dev The meter must bind only at the ceiling, not shave allowance off honest use.
+    function test_Meter_DoesNotRestrictWithinEntitlement() public {
+        registry.setStanding(trader, uint16(hook.FULL_DEPTH_STANDING()), 20); // full tranche
+
+        int256[] memory amounts = new int256[](3);
+        bytes[] memory datas = new bytes[](3);
+        for (uint256 i = 0; i < 3; i++) {
+            amounts[i] = -int256(30e18); // 90e18 total, under the 100e18 tranche
+            TenureHook.DepthCredential memory c = _credential(TRANCHE, i + 1, block.timestamp + 1 hours);
+            datas[i] = abi.encode(c, _sign(traderKey, c));
+        }
+        _swapMany(amounts, datas); // must NOT revert
     }
 }

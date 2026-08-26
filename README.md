@@ -74,7 +74,8 @@ credential is how a trader claims *more* than base, never how they gain entry. A
 
 | Concern | Where |
 |---|---|
-| Depth enforcement at swap time | `src/TenureHook.sol:215` — `_beforeSwap` |
+| Depth enforcement at swap time | `src/TenureHook.sol:235` — `_beforeSwap` |
+| Per-transaction depth meter | `src/TenureHook.sol:316` — `_consumedDepth` / `_setConsumedDepth` |
 | Continuous depth curve (no cliffs) | `src/TenureHook.sol:172` — `depthFractionBps` |
 | Credential binding struct | `src/TenureHook.sol:91` — `DepthCredential` |
 | Anti-whitelist floor | `src/TenureHook.sol:48` — `BASE_DEPTH_BPS` |
@@ -85,6 +86,32 @@ credential is how a trader claims *more* than base, never how they gain entry. A
 they simply get their own standing rather than the victim's. There is nothing to steal: the
 credential names no beneficiary a thief could redirect. Asserted in
 `test_ForgedSignatureGetsForgersStanding`.
+
+### Depth is metered per transaction, not per swap
+
+A per-swap cap alone would be cosmetic: sign several credentials, split one large take into N
+cap-sized swaps in a single transaction, pay almost nothing extra. Standing would gate nothing.
+
+So consumed depth accumulates in **hook-local transient storage** across every leg of a transaction
+and is checked against the standing-derived entitlement. Consumption is keyed to the **recovered
+trader**, not the credential, so minting more signatures cannot raise the ceiling.
+
+**Per-transaction is the principled boundary, not the cheap one.** Atomicity is what makes a large
+take harmful. A trader splitting across blocks is exposed to price movement and other flow in
+between — that is ordinary trading, not extraction. What the hook gates is the atomic grab.
+
+**Unsigned swaps are metered too — anonymity is not an exemption.** Were they exempt, the cheapest
+route to the whole book would be to sign nothing and split at base depth, making standing strictly
+*worse* than no standing and running the mechanism backwards. Asserted in
+`test_Meter_UnsignedSplittingRevertsAtBaseCap`.
+
+#### Limitations, stated plainly
+
+- **Unsigned swaps batched by one router share a per-transaction bucket.** Any of those users can
+  sign a zero-standing credential — free, permissionless, no standing needed — and be metered
+  separately. Asserted in `test_Meter_ZeroStandingCredentialGetsItsOwnBucket`.
+- **Splitting across separate transactions in the same block still evades the cap.** It costs gas
+  per transaction and gives up atomicity, which makes it a materially weaker attack, but it is real.
 
 ### Standing is undefined below 20 swaps
 

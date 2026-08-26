@@ -57,6 +57,13 @@ contract TenureHook is BaseHook {
     ///      rather than a curve with fitted parameters.
     uint256 public constant FULL_DEPTH_STANDING = 10_000;
 
+    /// @dev Namespace for the per-transaction consumed-depth accumulator. Hook-local transient
+    ///      storage (EIP-1153): persists across every leg of one transaction and is cleared by the
+    ///      EVM at transaction end. That lifetime was verified in this repository's Milestone 0
+    ///      work — see analysis/roundtrip-negative-result.md, Q1 — so it is a measured property
+    ///      rather than an assumed one.
+    bytes32 private constant T_CONSUMED_NAMESPACE = keccak256("tenure.consumedDepth.v1");
+
     /// @notice The maximum a single swap may consume, per pool, in input-token units.
     /// @dev Set by the operator per pool. Zero means the pool is unconfigured and unrestricted.
     mapping(PoolId => uint256) public depthTranche;
@@ -106,6 +113,7 @@ contract TenureHook is BaseHook {
     error ReplayedNonce();
     error InvalidSignature();
     error ExceedsDepthAllowance(uint256 requested, uint256 allowed);
+    error DepthExhaustedThisTx(uint256 requested, uint256 remaining);
 
     event RegistryUpdated(address indexed registry);
     event DepthTrancheUpdated(PoolId indexed poolId, uint256 tranche);
@@ -262,16 +270,62 @@ contract TenureHook is BaseHook {
         }
         // else: trader stays address(0), whose standing is 0, which yields BASE_DEPTH_BPS.
 
-        // The stricter of what standing earns and what the trader authorised.
-        uint256 allowed = (tranche * depthFractionBps(standingOf(trader))) / BPS;
-        if (signedCap < allowed) allowed = signedCap;
+        // `entitled` is the ceiling standing earns, per transaction. `allowed` is what THIS swap
+        // may take: the stricter of the entitlement and what the trader actually authorised.
+        uint256 entitled = (tranche * depthFractionBps(standingOf(trader))) / BPS;
+        uint256 allowed = signedCap < entitled ? signedCap : entitled;
 
         if (requested > allowed) revert ExceedsDepthAllowance(requested, allowed);
+
+        // --- the per-transaction meter ---
+        //
+        // Without this, the cap is cosmetic: a trader signs several credentials and splits one
+        // large take into N cap-sized swaps in a single transaction, at near-zero extra cost.
+        // "Depth is the product" would then gate nothing.
+        //
+        // Consumption accumulates against the RECOVERED TRADER, not the credential, so signing
+        // more credentials cannot raise the ceiling. It is checked against `entitled` rather than
+        // `allowed`, for the same reason.
+        //
+        // Unsigned swaps meter against address(0). Under per-transaction scope that is safe: a
+        // shared anonymous bucket can only be shared within one transaction, and one transaction
+        // has one initiator. Crucially, unsigned swaps are NOT exempt — exempting them would make
+        // signing strictly worse than not signing, and the cheapest route to the whole book would
+        // be to stay anonymous and split. That would run the mechanism backwards.
+        uint256 consumed = _consumedDepth(trader);
+        if (consumed + requested > entitled) {
+            revert DepthExhaustedThisTx(requested, entitled - consumed);
+        }
+        _setConsumedDepth(trader, consumed + requested);
 
         emit DepthConsumed(trader, key.toId(), requested, allowed);
 
         // Zero fee override, unconditionally. The fee is identical for every address (§X).
         return (IHooks.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
+    }
+
+    /// @notice Depth already consumed by `trader` in this transaction.
+    /// @dev Cleared automatically at transaction end by EIP-1153 semantics. Exposed for tests and
+    ///      for integrators that want to know the remaining allowance mid-transaction.
+    /// @param trader The meter key: the recovered signer, or address(0) for unsigned swaps.
+    function consumedDepthThisTx(address trader) external view returns (uint256) {
+        return _consumedDepth(trader);
+    }
+
+    /// @dev Reads the per-transaction accumulator for one meter key.
+    function _consumedDepth(address trader) internal view returns (uint256 v) {
+        bytes32 slot = keccak256(abi.encode(T_CONSUMED_NAMESPACE, trader));
+        assembly ("memory-safe") {
+            v := tload(slot)
+        }
+    }
+
+    /// @dev Writes the per-transaction accumulator for one meter key.
+    function _setConsumedDepth(address trader, uint256 v) internal {
+        bytes32 slot = keccak256(abi.encode(T_CONSUMED_NAMESPACE, trader));
+        assembly ("memory-safe") {
+            tstore(slot, v)
+        }
     }
 
     /// @dev ECDSA recovery rejecting malleable signatures. Returns address(0) on malformed input so
