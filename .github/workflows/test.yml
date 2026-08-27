@@ -32,4 +32,11 @@ jobs:
         run: forge build --sizes
 
       - name: Run Forge tests
-        run: forge test -vvv
+        # --isolate is required: without it the cross-transaction tests SKIP rather
+        # than run, and a skip is not a pass. scripts/gate.sh enforces the same.
+        run: forge test --isolate -vvv
+
+      - name: Check README file:line pointers still resolve
+        # The partner-integrations pointers are a submission binary gate, and
+        # `forge fmt` reflows source files, so they drift silently.
+        run: python scripts/check_pointers.py

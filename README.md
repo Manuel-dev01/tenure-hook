@@ -101,11 +101,11 @@ credential is how a trader claims *more* than base, never how they gain entry. A
 | Concern | Where |
 |---|---|
 | Depth enforcement at swap time | `src/TenureHook.sol:235` — `_beforeSwap` |
-| Per-transaction depth meter | `src/TenureHook.sol:316` — `_consumedDepth` / `_setConsumedDepth` |
-| Continuous depth curve (no cliffs) | `src/TenureHook.sol:172` — `depthFractionBps` |
-| Credential binding struct | `src/TenureHook.sol:91` — `DepthCredential` |
-| Anti-whitelist floor | `src/TenureHook.sol:48` — `BASE_DEPTH_BPS` |
-| Fee neutrality, structural | `src/TenureHook.sol:136` — `beforeSwapReturnDelta: false` |
+| Per-transaction depth meter | `src/TenureHook.sol:317` — `_consumedDepth` / `_setConsumedDepth` |
+| Continuous depth curve (no cliffs) | `src/TenureHook.sol:192` — `depthFractionBps` |
+| Credential binding struct | `src/TenureHook.sol:101` — `DepthCredential` |
+| Anti-whitelist floor | `src/TenureHook.sol:51` — `BASE_DEPTH_BPS` |
+| Fee neutrality, structural | `src/TenureHook.sol:148` — `beforeSwapReturnDelta: false` |
 | Stage 1 tests (15) | [`test/TenureHookTest.t.sol`](test/TenureHookTest.t.sol) |
 
 **Forgery is a no-op, not an attack.** A forged signature recovers to the *forger's own* address, so
@@ -210,11 +210,11 @@ is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDe
 | **Brevis** | [`brevis/prover/circuits/circuit.go`](brevis/prover/circuits/circuit.go) | app circuit proving historical chain activity |
 | **Brevis** | [`brevis/app/src/index.ts`](brevis/app/src/index.ts) | proof request, local proving, gateway submission to Sepolia |
 | **Brevis** | [`brevis/contracts/`](brevis/contracts/) | `BrevisApp` callback receiver |
-| **Brevis** | `src/TenureRegistry.sol:88` | `handleProofResult` — ZK callback, `_vkHash` validated |
+| **Brevis** | `src/TenureRegistry.sol:83` | `handleProofResult` — ZK callback, `_vkHash` validated |
 | **Brevis** | `src/lib/BrevisAppZkOnly.sol:9` | vendored `BrevisAppZkOnly` callback base |
-| **Uniswap v4** | `src/TenureHook.sol:215` | `_beforeSwap` enforcing the depth entitlement |
-| **Uniswap v4** | `src/TenureHook.sol:129` | `getHookPermissions` — beforeSwap only, no fee power |
-| **OpenZeppelin** | `src/TenureHook.sol:34` | `uniswap-hooks` v1.0.0 `BaseHook` |
+| **Uniswap v4** | `src/TenureHook.sol:235` | `_beforeSwap` enforcing the depth entitlement |
+| **Uniswap v4** | `src/TenureHook.sol:136` | `getHookPermissions` — beforeSwap only, no fee power |
+| **OpenZeppelin** | `src/TenureHook.sol:37` | `uniswap-hooks` v1.0.0 `BaseHook` |
 
 Attribution for vendored upstream code: [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). At the T1
 gate, everything under `brevis/` is upstream's example code, unmodified.

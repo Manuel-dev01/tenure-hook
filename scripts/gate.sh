@@ -78,6 +78,12 @@ check $? "README has partner integrations section"
 grep -qE '\.sol:[0-9]+' README.md 2>/dev/null
 check $? "README has file:line pointers"
 
+# ...and they must still RESOLVE. forge fmt reflows files, so a pointer that was
+# correct when written drifts silently. This is a binary gate, so it is verified
+# rather than trusted.
+python scripts/check_pointers.py >"$TMP/gate_ptr.log" 2>&1
+check $? "README file:line pointers still resolve (see $TMP/gate_ptr.log)"
+
 # setVkHash is security-critical but only exists once the registry is wired.
 # An unset vkHash accepts proofs from ANY circuit, so from stage 3 this is hard.
 if [ "$STAGE" -ge 3 ]; then

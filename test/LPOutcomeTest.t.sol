@@ -83,9 +83,7 @@ contract LPOutcomeTest is Test, Deployers {
         retail = vm.addr(retailKey);
 
         MockERC20[] memory tokens = deployTokens(2, 2 ** 255);
-        (token0, token1) = address(tokens[0]) < address(tokens[1])
-            ? (tokens[0], tokens[1])
-            : (tokens[1], tokens[0]);
+        (token0, token1) = address(tokens[0]) < address(tokens[1]) ? (tokens[0], tokens[1]) : (tokens[1], tokens[0]);
 
         registry = new OperatorStandingRegistry(operator);
 
@@ -126,10 +124,7 @@ contract LPOutcomeTest is Test, Deployers {
         modifyLiquidityRouter.modifyLiquidity(
             pool,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: TICK_LOWER,
-                tickUpper: TICK_UPPER,
-                liquidityDelta: LIQUIDITY,
-                salt: bytes32(0)
+                tickLower: TICK_LOWER, tickUpper: TICK_UPPER, liquidityDelta: LIQUIDITY, salt: bytes32(0)
             }),
             ZERO_BYTES
         );
@@ -210,10 +205,7 @@ contract LPOutcomeTest is Test, Deployers {
         modifyLiquidityRouter.modifyLiquidity(
             pool,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: TICK_LOWER,
-                tickUpper: TICK_UPPER,
-                liquidityDelta: -LIQUIDITY,
-                salt: bytes32(0)
+                tickLower: TICK_LOWER, tickUpper: TICK_UPPER, liquidityDelta: -LIQUIDITY, salt: bytes32(0)
             }),
             ZERO_BYTES
         );

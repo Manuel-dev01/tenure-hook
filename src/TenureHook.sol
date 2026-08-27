@@ -232,11 +232,12 @@ contract TenureHook is BaseHook {
     /// @param params The swap parameters; only the size is consulted.
     /// @param hookData Empty, or an ABI-encoded (DepthCredential, signature).
     /// @return The beforeSwap selector, a zero delta, and a zero fee override.
-    function _beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata params, bytes calldata hookData)
-        internal
-        override
-        returns (bytes4, BeforeSwapDelta, uint24)
-    {
+    function _beforeSwap(
+        address sender,
+        PoolKey calldata key,
+        IPoolManager.SwapParams calldata params,
+        bytes calldata hookData
+    ) internal override returns (bytes4, BeforeSwapDelta, uint24) {
         uint256 tranche = depthTranche[key.toId()];
 
         // Unconfigured pool: nothing to enforce.

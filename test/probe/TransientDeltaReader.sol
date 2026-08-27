@@ -44,11 +44,7 @@ library TransientDeltaReader {
     ///        (the router), never the EOA. See the v4 trap list.
     /// @param currency The currency to read the delta for.
     /// @return delta Negative = target owes the manager. Positive = manager owes target.
-    function currencyDelta(IExttload manager, address target, Currency currency)
-        internal
-        view
-        returns (int256 delta)
-    {
+    function currencyDelta(IExttload manager, address target, Currency currency) internal view returns (int256 delta) {
         // Slot derived by v4-core's own _computeSlot — see CurrencyDelta.sol:10-16.
         bytes32 slot = CurrencyDelta._computeSlot(target, currency);
         delta = int256(uint256(manager.exttload(slot)));

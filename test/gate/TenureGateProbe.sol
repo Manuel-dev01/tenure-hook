@@ -157,7 +157,7 @@ contract TenureGateProbe is BaseTestHooks {
 
         uint256 requested = params.amountSpecified < 0
             // forge-lint: disable-next-line(unsafe-typecast)
-            ? uint256(-params.amountSpecified) // exactIn
+            ? uint256(-params.amountSpecified)  // exactIn
             // forge-lint: disable-next-line(unsafe-typecast)
             : uint256(params.amountSpecified); // exactOut
 

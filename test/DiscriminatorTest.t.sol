@@ -113,10 +113,7 @@ contract DiscriminatorTest is Test, Deployers {
         modifyLiquidityRouter.modifyLiquidity(
             k,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: TICK_LOWER,
-                tickUpper: TICK_UPPER,
-                liquidityDelta: LIQUIDITY,
-                salt: bytes32(0)
+                tickLower: TICK_LOWER, tickUpper: TICK_UPPER, liquidityDelta: LIQUIDITY, salt: bytes32(0)
             }),
             ZERO_BYTES
         );

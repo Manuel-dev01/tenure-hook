@@ -33,8 +33,8 @@ contract ProbeHook is BaseTestHooks {
     struct Observation {
         // --- identity ---
         address locker; // `sender` in beforeSwap = the address that called swap() = the LOCKER,
-            // not the EOA. PoolManager credits deltas to msg.sender at
-            // PoolManager.sol:224, so this is the address deltas belong to. The v4 trap list.
+        // not the EOA. PoolManager credits deltas to msg.sender at
+        // PoolManager.sol:224, so this is the address deltas belong to. The v4 trap list.
         // --- global transient state ---
         uint256 nonzeroDeltaCount; // GLOBAL across all targets in this unlock, not locker-scoped.
         // --- positional deltas for this pool's pair ---

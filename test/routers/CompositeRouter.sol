@@ -111,10 +111,7 @@ contract CompositeRouter is IUnlockCallback {
             manager.modifyLiquidity(
                 s.key,
                 IPoolManager.ModifyLiquidityParams({
-                    tickLower: s.tickLower,
-                    tickUpper: s.tickUpper,
-                    liquidityDelta: s.liquidityDelta,
-                    salt: bytes32(0)
+                    tickLower: s.tickLower, tickUpper: s.tickUpper, liquidityDelta: s.liquidityDelta, salt: bytes32(0)
                 }),
                 s.hookData
             );

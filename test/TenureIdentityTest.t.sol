@@ -87,10 +87,7 @@ contract TenureIdentityTest is Test, Deployers {
         modifyLiquidityRouter.modifyLiquidity(
             gatedPool,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: TICK_LOWER,
-                tickUpper: TICK_UPPER,
-                liquidityDelta: LIQUIDITY,
-                salt: bytes32(0)
+                tickLower: TICK_LOWER, tickUpper: TICK_UPPER, liquidityDelta: LIQUIDITY, salt: bytes32(0)
             }),
             ZERO_BYTES
         );
@@ -108,11 +105,7 @@ contract TenureIdentityTest is Test, Deployers {
         returns (TenureGateProbe.DepthCredential memory c)
     {
         c = TenureGateProbe.DepthCredential({
-            locker: address(router),
-            poolId: gatedPoolId,
-            maxSize: maxSize,
-            nonce: nonce,
-            deadline: deadline
+            locker: address(router), poolId: gatedPoolId, maxSize: maxSize, nonce: nonce, deadline: deadline
         });
     }
 

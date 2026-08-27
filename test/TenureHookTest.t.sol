@@ -96,10 +96,7 @@ contract TenureHookTest is Test, Deployers {
         modifyLiquidityRouter.modifyLiquidity(
             pool,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: TICK_LOWER,
-                tickUpper: TICK_UPPER,
-                liquidityDelta: LIQUIDITY,
-                salt: bytes32(0)
+                tickLower: TICK_LOWER, tickUpper: TICK_UPPER, liquidityDelta: LIQUIDITY, salt: bytes32(0)
             }),
             ZERO_BYTES
         );
@@ -117,11 +114,7 @@ contract TenureHookTest is Test, Deployers {
         returns (TenureHook.DepthCredential memory c)
     {
         c = TenureHook.DepthCredential({
-            locker: address(router),
-            poolId: poolIdBytes,
-            maxSize: maxSize,
-            nonce: nonce,
-            deadline: deadline
+            locker: address(router), poolId: poolIdBytes, maxSize: maxSize, nonce: nonce, deadline: deadline
         });
     }
 
@@ -144,7 +137,6 @@ contract TenureHookTest is Test, Deployers {
 
         router.execute(steps, net);
     }
-
 
     /// @dev Execute several swaps in ONE transaction (one unlock), each with its own hookData.
     ///      This is the split attack: without a per-transaction meter, N cap-sized swaps take N
@@ -229,9 +221,7 @@ contract TenureHookTest is Test, Deployers {
         // Sign BEFORE arming expectRevert: _sign calls hook.hashCredential(), an external call
         // that would otherwise consume the expectation and pass for the wrong reason.
         bytes memory data = abi.encode(c, _sign(traderKey, c));
-        _expectHookRevert(
-            abi.encodeWithSelector(TenureHook.ExceedsDepthAllowance.selector, allowed + 1, allowed)
-        );
+        _expectHookRevert(abi.encodeWithSelector(TenureHook.ExceedsDepthAllowance.selector, allowed + 1, allowed));
         _swap(-int256(allowed + 1), data);
     }
 
@@ -297,9 +287,7 @@ contract TenureHookTest is Test, Deployers {
         TenureHook.DepthCredential memory c = _credential(TRANCHE, 1, block.timestamp + 1 hours);
         bytes memory data = abi.encode(c, _sign(eveKey, c));
 
-        _expectHookRevert(
-            abi.encodeWithSelector(TenureHook.ExceedsDepthAllowance.selector, TRANCHE, BASE_ALLOWED)
-        );
+        _expectHookRevert(abi.encodeWithSelector(TenureHook.ExceedsDepthAllowance.selector, TRANCHE, BASE_ALLOWED));
         _swap(-int256(TRANCHE), data);
     }
 
@@ -404,9 +392,7 @@ contract TenureHookTest is Test, Deployers {
             datas[i] = abi.encode(c, _sign(traderKey, c));
         }
 
-        _expectHookRevert(
-            abi.encodeWithSelector(TenureHook.DepthExhaustedThisTx.selector, BASE_ALLOWED, uint256(0))
-        );
+        _expectHookRevert(abi.encodeWithSelector(TenureHook.DepthExhaustedThisTx.selector, BASE_ALLOWED, uint256(0)));
         _swapMany(amounts, datas);
     }
 
@@ -423,9 +409,7 @@ contract TenureHookTest is Test, Deployers {
         datas[0] = "";
         datas[1] = "";
 
-        _expectHookRevert(
-            abi.encodeWithSelector(TenureHook.DepthExhaustedThisTx.selector, BASE_ALLOWED, uint256(0))
-        );
+        _expectHookRevert(abi.encodeWithSelector(TenureHook.DepthExhaustedThisTx.selector, BASE_ALLOWED, uint256(0)));
         _swapMany(amounts, datas);
     }
 
