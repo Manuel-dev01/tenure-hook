@@ -16,6 +16,32 @@ bracket — you present a credential you earned.
 
 ---
 
+## What this submission claims — and what it does not
+
+> The mechanism gates atomic depth by proven directional balance, **the gate binds**, and **it
+> cannot be split around**. Restraint costs fee income proportionally. **We do not claim to improve
+> LP outcome**, because a closed sandbox cannot know where price goes after the informed flow, and
+> any reference price we chose would determine the sign of the result.
+
+The three-arm A/B in [`analysis/lp-outcome.md`](analysis/lp-outcome.md) establishes the first two
+together:
+
+| comparison | what it proves |
+|---|---|
+| arm A vs arm B | the cap **binds** — informed take falls 80.00 → 5.00 |
+| arm B vs arm C | the cap **cannot be routed around** — the split attack realises byte-identical volume, fees and inventory |
+
+That pairing is the point. Two weeks earlier this repository's predecessor died because the
+mechanism did not do what its pitch said (see [the falsification](analysis/roundtrip-negative-result.md)).
+This is the opposite outcome, measured against the one attack that would have made the cap cosmetic.
+
+**On the benefit claim.** Valuing the arms at a single reference price flips the sign of the result:
+tranching looks harmful at P = 0.98 and beneficial at P = 1.02. Valuing at the unconstrained arm's
+own final price is worse than arbitrary — it is biased toward that arm by construction. So no LP
+value figure is reported, and the sensitivity is published instead.
+
+---
+
 ## Repository history, stated plainly
 
 This repository began as **Roundtrip**, a different hook that was **falsified on 2026-08-23**, one
