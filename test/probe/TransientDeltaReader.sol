@@ -10,7 +10,7 @@ import {NonzeroDeltaCount} from "v4-core/src/libraries/NonzeroDeltaCount.sol";
 /// @notice Reads the PoolManager's EIP-1153 transient flash-accounting state from
 ///         *outside* the PoolManager, via `IExttload`.
 ///
-/// @dev Slot derivation is IMPORTED from v4-core, never transcribed. CLAUDE.md §2 warns that a
+/// @dev Slot derivation is IMPORTED from v4-core, never transcribed. The go/no-go gate warns that a
 ///      wrong slot returns plausible-looking garbage rather than reverting — the worst failure
 ///      mode available. Importing makes the derivation compile-time bound to the pinned
 ///      submodule (v4-core v4.0.0, e50237c), so it cannot silently drift from the values the
@@ -41,7 +41,7 @@ library TransientDeltaReader {
     /// @notice The outstanding currency delta the PoolManager is holding for `target`.
     /// @param manager The PoolManager to read transient state from.
     /// @param target The address the delta is credited to — in a hook this is the LOCKER
-    ///        (the router), never the EOA. See CLAUDE.md §7.
+    ///        (the router), never the EOA. See the v4 trap list.
     /// @param currency The currency to read the delta for.
     /// @return delta Negative = target owes the manager. Positive = manager owes target.
     function currencyDelta(IExttload manager, address target, Currency currency)

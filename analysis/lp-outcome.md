@@ -48,7 +48,7 @@ Valuing at arm A's own final price is worse than arbitrary — it is **biased to
 construction**, since A's inventory is exactly what that price implies.
 
 Picking whichever price makes tranching look good would be precisely the tuned constant
-`CLAUDE.md` §3 forbids. So the number is not reported. **Whether tranching helps an LP depends on
+the anti-goal blacklist forbids. So the number is not reported. **Whether tranching helps an LP depends on
 where the price actually goes after the informed flow, and that is not knowable in a closed
 sandbox.** It is measurable against real market data, which is Stage 5's fork-replay.
 

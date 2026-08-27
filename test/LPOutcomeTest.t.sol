@@ -304,7 +304,7 @@ contract LPOutcomeTest is Test, Deployers {
         // Valuing every arm at one reference price requires assuming where the true price ends up,
         // and the SIGN of the result flips with that assumption: measured at P = 0.98 tranching
         // looks harmful, at P = 1.02 it looks beneficial. Picking the flattering price would be
-        // precisely the tuned constant CLAUDE.md §3 forbids.
+        // precisely the tuned constant the anti-goal blacklist forbids.
         //
         // So this harness reports only what is assumption-free: realised volume, fee income, and
         // the raw inventory each arm leaves behind. Whether tranching HELPS the LP depends on

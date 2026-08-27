@@ -102,5 +102,5 @@ Not before. A locally generated proof is **not** the gate — the round trip is.
 
 ## If it does not close by Aug 26
 
-Per `CLAUDE.md` §2 the hard switch is **Aug 28 EOD**, and Vigil needs six days. Treat end of Aug 26
+Per the go/no-go gate the hard switch is **Aug 28 EOD**, and Vigil needs six days. Treat end of Aug 26
 as the real decision point rather than running the clock to the 28th.

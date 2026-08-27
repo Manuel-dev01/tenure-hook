@@ -12,7 +12,7 @@ bracket — you present a credential you earned.
 
 > **Status: Stage 1 complete.** The hook works standalone with operator-set standing. Capability
 > gates T1a and T2 have both passed. Nothing here prices anything, and no code path adjusts a fee
-> based on standing — see `CLAUDE.md` §X, which forbids it outright.
+> based on standing — see the fee-parity rule, which forbids it outright.
 
 ---
 

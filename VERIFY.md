@@ -34,7 +34,7 @@ Does any logic conclude "X is happening" from evidence that is also consistent w
 
 **S4 — Am I about to tune a number to make a weak signal look clean?**
 *Precedent: the exactness falsifier; thresholds on continuous scores.*
-Is there a constant in this stage whose value I chose to make results look better? If yes, it is a heuristic. §3 of CLAUDE.md forbids it. Say "fuzzy" and stop.
+Is there a constant in this stage whose value I chose to make results look better? If yes, it is a heuristic. The anti-goal blacklist forbids it. Say "fuzzy" and stop.
 
 **S5 — Does this assertion pass for the reason it claims?**
 *Precedent: a tail-only checksum passed files damaged mid-file. A bare-selector `expectRevert` would have passed on the wrong error. "The SDK returned no error" was treated as verification. `vm.expectRevert` was silently consumed by a `hashCredential` call inside the argument list, so five tests failed while the code was correct.*
@@ -50,7 +50,7 @@ Read the diff. Then answer:
 - Does any code path make a **fee** depend on the address? (If yes: stop. This is disqualifying, not a bug.)
 - Could a tired judge reading this code call it loyalty pricing? Name what in the code refutes that.
 - Does the one-liner still describe what the code does? *"Depth is the product. Every address pays the same fee; what you earn is how much of the book you can reach."*
-- Is anything in CLAUDE.md §5's "not building" list now in the repo?
+- Is anything in the declared scope's "not building" list now in the repo?
 
 ---
 

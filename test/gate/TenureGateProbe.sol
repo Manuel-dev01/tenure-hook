@@ -12,7 +12,7 @@ import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeS
 /// @notice T2 tests identity binding, not proving. This stands in for the registry that will
 ///         receive `handleProofResult` from Brevis and record standing per address.
 /// @dev NOT the real registry. The real one validates `_vkHash` against an expected value — see
-///      CLAUDE.md §2. Anyone may write here; that is fine because T2 is testing the hook's
+///      the go/no-go gate. Anyone may write here; that is fine because T2 is testing the hook's
 ///      signature handling, not the registry's authorisation.
 contract StandingRegistryStub {
     /// @notice Standing earned by an address, in whatever unit the circuit ultimately outputs.
@@ -34,19 +34,19 @@ contract StandingRegistryStub {
 ///      v4-periphery exposes `IMsgSender.msgSender()` for this, but it is **self-reported** — a
 ///      malicious router can name any address. Since Tenure grants larger size caps, an
 ///      unauthenticated identity claim means anyone can claim the highest standing in the pool and
-///      take the largest size. Self-reported identity is not identity. See CLAUDE.md §7 and §X.
+///      take the largest size. Self-reported identity is not identity. See the v4 trap list and the fee-parity rule.
 ///
 /// @dev THE MECHANISM. The trader signs an EIP-712 `DepthCredential` binding the locker, the pool,
 ///      a maximum size, a nonce, and a deadline. The hook recovers the signer and reads *that*
 ///      address's standing. Standing is therefore an asset the trader presents, not a property the
 ///      pool assigns.
 ///
-/// @dev NO FEE LOGIC EXISTS IN THIS CONTRACT AND NONE MAY BE ADDED. CLAUDE.md §X: the fee is
+/// @dev NO FEE LOGIC EXISTS IN THIS CONTRACT AND NONE MAY BE ADDED. The fee-parity rule: the fee is
 ///      identical for every address; standing changes accessible depth only.
 ///
 /// @dev Derived from Uniswap v4-core test scaffolding (BUSL-1.1). Built on `BaseTestHooks` because
 ///      this is a throwaway gate, exactly as the Roundtrip probe was — the real hook will use
-///      OpenZeppelin's `uniswap-hooks` BaseHook (CLAUDE.md §6).
+///      OpenZeppelin's `uniswap-hooks` BaseHook (the project conventions).
 contract TenureGateProbe is BaseTestHooks {
     using PoolIdLibrary for PoolKey;
 
@@ -81,7 +81,7 @@ contract TenureGateProbe is BaseTestHooks {
     uint256 public constant BASE_DEPTH_ALLOWANCE = 1e18;
 
     /// @notice Additional depth per unit of standing. Linear and deliberately dull: any curve here
-    ///         would be a tuning constant, and CLAUDE.md §3 forbids tuned heuristics.
+    ///         would be a tuning constant, and the anti-goal blacklist forbids tuned heuristics.
     uint256 public constant DEPTH_PER_STANDING = 5e17;
 
     StandingRegistryStub public immutable registry;
@@ -132,7 +132,7 @@ contract TenureGateProbe is BaseTestHooks {
     /// @param hookData ABI-encoded (DepthCredential, signature).
     /// @return selector The beforeSwap selector.
     /// @return delta Always ZERO_DELTA — this hook does not price.
-    /// @return lpFeeOverride Always 0. The fee is identical for every address (CLAUDE.md §X).
+    /// @return lpFeeOverride Always 0. The fee is identical for every address (the fee-parity rule).
     function beforeSwap(
         address sender,
         PoolKey calldata key,

@@ -1,6 +1,6 @@
 # One-liner collision check against the UHI Hook Directory
 
-**Date:** 2026-08-25 · **Verdict: the wedge is clear, and the framing constraint in §X is now
+**Date:** 2026-08-25 · **Verdict: the wedge is clear, and the fee-parity constraint is now
 evidenced rather than assumed.**
 
 The one-liner under test:
@@ -37,14 +37,14 @@ volatility and swap size) and `Autonomous OTC Hook` (a separate execution lane f
 
 | Project | Cohort | What it does | Relation |
 |---|---|---|---|
-| **Loyalty Points Fee Hook** | UHI3 | "discount on swap fees based on swap volume" — tags: *Dynamic Fee, Trading Rewards* | **The exact pattern §X warns about, already built.** Differs from Tenure on the one axis that matters: it moves the fee. |
+| **Loyalty Points Fee Hook** | UHI3 | "discount on swap fees based on swap volume" — tags: *Dynamic Fee, Trading Rewards* | **The exact pattern we guard against, already built.** Differs from Tenure on the one axis that matters: it moves the fee. |
 | **SwapNFT** | — | mints a soulbound **tier** NFT based on price impact, then applies a **fee discount** | history → tier → fee. Also the banned pattern, and it uses the banned vocabulary. |
 | **Reputation Hook - MetaPools** | UHI2 | "giving identities to traders globally" — integrations include **Brevis** | Brevis + trader reputation has a precedent. Our ZK layer is not itself novel. |
 | KYC / allowlist gating | many | 40 hits — `kvhook`, `RWAMarket`, `DCLEX`, `Compliant DEX`, `ZK Proof-of-Compliance` | The "whitelist with extra steps" objection is a pattern judges have seen repeatedly. |
 
 ## What this changes
 
-1. **§X is not paranoia.** Fee-discount-on-history exists in this directory at least twice. If
+1. **The fee-parity rule is not paranoia.** Fee-discount-on-history exists in this directory at least twice. If
    Tenure is heard as loyalty pricing, a judge is not imagining a competitor — they are recalling a
    specific prior project. Leading with depth is the *only* thing separating us from
    `Loyalty Points Fee Hook` in a judge's memory, and it is not optional.
@@ -63,4 +63,4 @@ volatility and swap size) and `Autonomous OTC Hook` (a separate execution lane f
 ## Verdict
 
 The one-liner survives. No prior project sells depth as the entitlement. The surrounding space is
-crowded enough that the framing discipline in §X is load-bearing rather than stylistic.
+crowded enough that the fee-parity discipline is load-bearing rather than stylistic.

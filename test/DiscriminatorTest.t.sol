@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 // MILESTONE 0 — DISCRIMINATOR TEST — Roundtrip
 //
-// One job: answer CLAUDE.md §2's three questions. Nothing here prices anything.
+// One job: answer the go/no-go gate's three questions. Nothing here prices anything.
 //
 //   Q1. Does hook-local transient storage survive across legs of one tx, and clear between txs?
 //   Q2. Can the hook read the PoolManager's transient deltas mid-swap?   <-- THE GO/NO-GO
@@ -68,7 +68,7 @@ contract DiscriminatorTest is Test, Deployers {
         C = Currency.wrap(addrs[2]);
 
         // Mine a CREATE2 address whose low bits encode exactly BEFORE_SWAP_FLAG. A hook at an
-        // unmined address fails Hooks.validateHookPermissions at initialize. CLAUDE.md §6.
+        // unmined address fails Hooks.validateHookPermissions at initialize. The project conventions.
         // Note beforeSwapReturnDelta is deliberately NOT set — this probe cannot price.
         (address hookAddr, bytes32 salt) = HookMiner.find(
             address(this), uint160(Hooks.BEFORE_SWAP_FLAG), type(ProbeHook).creationCode, abi.encode(manager)
@@ -205,7 +205,7 @@ contract DiscriminatorTest is Test, Deployers {
     /// @dev Run with `--isolate` so each top-level call is its own transaction. Without it,
     ///      Foundry executes the whole test body as a single transaction and this correctly
     ///      fails — which is itself the demonstration that the state is tx-scoped, not call-scoped.
-    ///      This is why cross-transaction sandwiches are invisible to us (CLAUDE.md §5, §7).
+    ///      This is why cross-transaction sandwiches are invisible to us (the declared scope, the v4 trap list).
     function test_Q1_TransientClearedBetweenTxs() public {
         CompositeRouter.Step[] memory steps = new CompositeRouter.Step[](1);
         steps[0] = _swapStep(poolAB_probed, true, -1e18);
@@ -237,7 +237,7 @@ contract DiscriminatorTest is Test, Deployers {
     /// @dev `manager.take(currency, to, amount)` accounts a delta of exactly `-amount` to the
     ///      caller (PoolManager._accountDelta). So after taking CONTROL_TAKE of A, the router's
     ///      delta in A is exactly -CONTROL_TAKE. A zero reading here cannot be confused with a
-    ///      wrong slot, which is CLAUDE.md §7's ambiguous-zero trap.
+    ///      wrong slot, which is the v4 trap list's ambiguous-zero trap.
     function test_Q2_HookReadsKnownNonZeroPoolManagerDelta() public {
         CompositeRouter.Step[] memory steps = new CompositeRouter.Step[](2);
         steps[0] = _takeStep(A, uint256(CONTROL_TAKE));
@@ -257,7 +257,7 @@ contract DiscriminatorTest is Test, Deployers {
     }
 
     /// @notice A deliberately wrong slot must read zero, proving the right slot is not garbage.
-    /// @dev CLAUDE.md §7: `exttload` returning zero is ambiguous. This disambiguates by showing
+    /// @dev the v4 trap list: `exttload` returning zero is ambiguous. This disambiguates by showing
     ///      the reader distinguishes a real value from a bad address.
     function test_Q2_WrongSlotReadsZeroSoRightSlotIsNotGarbage() public {
         CompositeRouter.Step[] memory steps = new CompositeRouter.Step[](2);
@@ -371,7 +371,7 @@ contract DiscriminatorTest is Test, Deployers {
     /// @notice 5. Third-party batch settlement. One solver, two unrelated users, opposite sides.
     /// @dev THE COLLISION. If this is isomorphic to scenario 4 at the delta boundary, the
     ///      predicate cannot separate a solver netting users from a bot closing a loop, and per
-    ///      CLAUDE.md §3 no heuristic may be added to rescue it.
+    ///      the anti-goal blacklist no heuristic may be added to rescue it.
     function test_Q3_5_ThirdPartyBatchSettlement() public {
         CompositeRouter.Step[] memory steps = new CompositeRouter.Step[](2);
         // user 1 wants A->B; solver routes it through the cheap pool
@@ -443,7 +443,7 @@ contract DiscriminatorTest is Test, Deployers {
         // Recorded for completeness only. PRE-DISQUALIFIED as a separator: the hook is open
         // source and on-chain, so any predicate keyed to exact amount matching is defeated by
         // adding one wei. A separator an adversary breaks by reading our repo is a speed bump,
-        // not a structural classification, and fails CLAUDE.md §3 for the same reason a tuned
+        // not a structural classification, and fails the anti-goal blacklist for the same reason a tuned
         // threshold does.
         console.log("[pre-disqualified] arb input == prior credit?  ", oArb.amountSpecified == -oArb.deltaCurrency1);
         console.log("[pre-disqualified] batch input == prior credit?", oBatch.amountSpecified == -oBatch.deltaCurrency1);

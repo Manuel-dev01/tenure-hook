@@ -22,7 +22,7 @@ import {IStandingRegistry} from "../src/interfaces/IStandingRegistry.sol";
 ///
 /// @dev The mined address deliberately encodes beforeSwap and nothing else. Without
 ///      BEFORE_SWAP_RETURNS_DELTA the hook is structurally incapable of altering execution
-///      economics, whatever code anyone later adds (CLAUDE.md §X).
+///      economics, whatever code anyone later adds (the fee-parity rule).
 contract Deploy is Script {
     /// @notice CREATE2 deployer proxy, present at the same address on every chain Foundry targets.
     address internal constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;

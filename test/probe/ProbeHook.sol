@@ -14,8 +14,8 @@ import {TransientDeltaReader} from "./TransientDeltaReader.sol";
 /// @notice Observes the PoolManager's transient flash-accounting state at `beforeSwap` and
 ///         records it. Prices NOTHING: returns ZERO_DELTA and a zero fee override, always.
 ///
-/// @dev This contract exists to answer CLAUDE.md §2's Q1/Q2/Q3 and is expected to be deleted
-///      afterwards. It deliberately contains no classification and no pricing — per §2, no hook
+/// @dev This contract exists to answer the go/no-go gate's Q1/Q2/Q3 and is expected to be deleted
+///      afterwards. It deliberately contains no classification and no pricing — per the go/no-go gate, no hook
 ///      logic may be written until the go/no-go gate is answered.
 ///
 /// @dev Built on `BaseTestHooks` (v4-core/src/test/BaseTestHooks.sol), NOT on a production hook
@@ -34,7 +34,7 @@ contract ProbeHook is BaseTestHooks {
         // --- identity ---
         address locker; // `sender` in beforeSwap = the address that called swap() = the LOCKER,
             // not the EOA. PoolManager credits deltas to msg.sender at
-            // PoolManager.sol:224, so this is the address deltas belong to. CLAUDE.md §7.
+            // PoolManager.sol:224, so this is the address deltas belong to. The v4 trap list.
         // --- global transient state ---
         uint256 nonzeroDeltaCount; // GLOBAL across all targets in this unlock, not locker-scoped.
         // --- positional deltas for this pool's pair ---
@@ -121,7 +121,7 @@ contract ProbeHook is BaseTestHooks {
             o.deltaInInputCurrency = params.zeroForOne ? d0 : d1;
             o.deltaInOutputCurrency = params.zeroForOne ? d1 : d0;
 
-            // --- the predicate under test (§3 requires this be categorical, not scored) ---
+            // --- the predicate under test (the anti-goal blacklist requires this be categorical, not scored) ---
             // "At beforeSwap, does the locker already hold a non-zero delta of OPPOSING sign in
             //  this swap's output currency?"
             // A swap always credits the locker in the output currency (positive delta). So the

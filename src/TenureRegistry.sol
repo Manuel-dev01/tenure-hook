@@ -23,7 +23,7 @@ import {IStandingRegistry} from "./interfaces/IStandingRegistry.sol";
 ///      never good traders from bad. Derivation in analysis/minimum-sample-decision.md, recorded
 ///      before any numbers were run at any N.
 ///
-/// @dev NO FEE LOGIC EXISTS HERE AND NONE MAY BE ADDED (CLAUDE.md §X).
+/// @dev NO FEE LOGIC EXISTS HERE AND NONE MAY BE ADDED (the fee-parity rule).
 contract TenureRegistry is BrevisAppZkOnly, IStandingRegistry {
     /// @notice Minimum observed swaps before an address has standing at all.
     /// @dev N = 20, chosen so one additional swap cannot move balance by more than 500 bps:

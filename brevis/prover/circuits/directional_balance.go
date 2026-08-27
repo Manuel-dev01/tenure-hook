@@ -16,7 +16,7 @@ import (
 // We do NOT claim to detect toxicity, adverse selection, or intent. Adverse-selection scoring was
 // considered and rejected — it infers intent from subsequent price movement, which is the same
 // mistake that killed the predecessor project (inferring an operation from a state prefix), and it
-// needs a threshold on a continuous modelled score, which CLAUDE.md §3 forbids.
+// needs a threshold on a continuous modelled score, which the anti-goal blacklist forbids.
 // See analysis/circuit-claim-decision.md.
 //
 // CONSEQUENCE: this circuit reads swap logs and nothing else. No price series, no post-trade

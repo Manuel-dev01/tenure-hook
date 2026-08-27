@@ -44,9 +44,9 @@ price series and the threshold, and every one is a modelling choice to defend on
 Against **B** the lookback is the *only* free parameter, and it is answered by showing the
 sensitivity rather than arguing about it.
 
-### 4. §3 compliance
+### 4. Anti-goal compliance
 
-A requires a threshold on a continuous modelled score — a tuned heuristic, which §3 bans outright.
+A requires a threshold on a continuous modelled score — a tuned heuristic, which the anti-goal blacklist bans outright.
 B maps balance to depth **continuously and monotonically, with no cliff**, so there is no threshold
 to tune and no bracket to fall into.
 
@@ -57,7 +57,7 @@ to tune and no bracket to fall into.
 > **The circuit proves what fraction of an address's swaps on this pool went in each direction over
 > a given window. The pool prices accessible depth on that balance.**
 
-We do **not** claim to detect toxicity, adverse selection, or intent. Under-claim in prose (§8);
+We do **not** claim to detect toxicity, adverse selection, or intent. Under-claim in prose;
 Functionality is graded against our own stated scope.
 
 ## The honest weakness, and why it is survivable

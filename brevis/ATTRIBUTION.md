@@ -8,7 +8,7 @@ The upstream licence is preserved in `LICENSE`.
 
 ## Why it is vendored rather than submoduled
 
-Milestone 0 (T1 in `CLAUDE.md` §2) uses the upstream example circuit unmodified, to answer one
+Milestone 0 (T1 in the go/no-go gate) uses the upstream example circuit unmodified, to answer one
 question: **does the Brevis proof round-trip close end-to-end on testnet?** Vendoring keeps the
 exact code that answered that gate visible in this repository's history.
 

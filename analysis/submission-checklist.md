@@ -16,7 +16,7 @@ either the submission or a question on stage. Tick nothing from memory.
 - [ ] Registry rejects a callback from any address other than the Brevis request contract.
 - [ ] Fail-closed tests all still pass against the *deployed* configuration, not just locally.
 
-## The framing constraint (§X) — the 30% criterion
+## The fee-parity constraint — the 30% criterion
 
 - [ ] **No code path adjusts a fee based on standing.** Grep the final tree for `getFee`,
       `lpFeeOverride`, `dynamicFee` and confirm every hit is either absent or provably constant.

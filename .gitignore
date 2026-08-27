@@ -29,3 +29,6 @@ brevis/contracts/cache/
 brevis/contracts/typechain/
 brevis/**/node_modules/
 .env
+
+# Local-only project guardrails, deliberately untracked
+CLAUDE.md

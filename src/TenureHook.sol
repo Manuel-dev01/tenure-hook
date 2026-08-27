@@ -22,7 +22,7 @@ import {IStandingRegistry} from "./interfaces/IStandingRegistry.sol";
 ///      added. `beforeSwap` returns a zero fee override unconditionally, and the hook's mined
 ///      address deliberately excludes `BEFORE_SWAP_RETURNS_DELTA`, so it is not merely policy —
 ///      the permission to alter execution economics is absent from the address itself.
-///      See CLAUDE.md §X: if a change makes a fee vary by address, the change is wrong.
+///      See the fee-parity rule: if a change makes a fee vary by address, the change is wrong.
 ///
 /// @dev NOBODY IS EXCLUDED. An address with no standing, or presenting no credential at all, still
 ///      receives `BASE_DEPTH_BPS` of the tranche. The mechanism caps size; it never denies access.
@@ -53,7 +53,7 @@ contract TenureHook is BaseHook {
     /// @notice Standing at which an address reaches the full tranche.
     /// @dev Depth rises linearly from BASE_DEPTH_BPS at standing 0 to BPS at this value, then
     ///      stops. Linear and monotonic: there are no brackets to be sorted into and no cliff to
-    ///      sit just below. CLAUDE.md §3 forbids tuned heuristics, so this is a straight line
+    ///      sit just below. The anti-goal blacklist forbids tuned heuristics, so this is a straight line
     ///      rather than a curve with fitted parameters.
     uint256 public constant FULL_DEPTH_STANDING = 10_000;
 
@@ -300,7 +300,7 @@ contract TenureHook is BaseHook {
 
         emit DepthConsumed(trader, key.toId(), requested, allowed);
 
-        // Zero fee override, unconditionally. The fee is identical for every address (§X).
+        // Zero fee override, unconditionally. The fee is identical for every address (the fee-parity rule).
         return (IHooks.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
     }
 

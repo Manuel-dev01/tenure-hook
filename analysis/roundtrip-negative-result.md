@@ -204,7 +204,7 @@ loudly rather than passing vacuously.
 
 ## What was kept
 
-Two verified facts, carried into `CLAUDE.md` §7 as v4 traps:
+Two verified facts, carried into the v4 trap list as v4 traps:
 
 1. **`beforeSwap` fires before `_accountPoolBalanceDelta`.** A hook never sees the current leg's
    own accounting. Verified at PoolManager.sol:200 vs :224.

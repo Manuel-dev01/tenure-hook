@@ -51,7 +51,7 @@ decided under pressure on Aug 31.
 **Done when:** a proof verifies for a real address with a real directional-balance output.
 
 > **This is the last honest switch point.** Vigil needs six days and would have five. Past ~Aug 28
-> switching is worse than narrowing (§2). If the circuit is not proving by end of Aug 26, narrow its
+> switching is worse than narrowing. If the circuit is not proving by end of Aug 26, narrow its
 > claim — do not change projects.
 
 ## Aug 27 — registry and hook
@@ -67,7 +67,7 @@ still pass against the real registry.
 
 ## Aug 28 — Sepolia
 
-- [ ] **Generate Sepolia trading history early** (§2) — a fresh pool has nothing to prove against.
+- [ ] **Generate Sepolia trading history early** — a fresh pool has nothing to prove against.
 - [ ] Deploy registry + mined hook; initialise pool; add liquidity.
 - [ ] `setVkHash`, then **read `vkHash()` back** to confirm (checklist item, not a deploy-log trust).
 

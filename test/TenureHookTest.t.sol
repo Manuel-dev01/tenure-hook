@@ -329,12 +329,12 @@ contract TenureHookTest is Test, Deployers {
     }
 
     // =======================================================================================
-    // §X — the fee is identical for every address
+    // The fee-parity rule — the fee is identical for every address
     // =======================================================================================
 
     /// @notice The hook holds no fee permission, so it cannot alter execution economics at all.
     /// @dev Fee neutrality is enforced by the mined address, not merely by policy. If
-    ///      beforeSwapReturnDelta were ever set, this test fails and §X has been violated.
+    ///      beforeSwapReturnDelta were ever set, this test fails and the fee-parity rule has been violated.
     function test_FeeParity_HookHoldsNoFeePermission() public view {
         Hooks.Permissions memory p = hook.getHookPermissions();
         assertFalse(p.beforeSwapReturnDelta, "hook must not be able to return a swap delta");

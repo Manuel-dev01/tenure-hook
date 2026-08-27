@@ -33,7 +33,7 @@ threshold — three more free parameters, each of which would need defending.
 ## The S4 trap this creates, named before it is walked into
 
 There is now an obvious temptation: **pick the 80-block window because it produces the nicest
-number.** That would be exactly the tuned constant `CLAUDE.md` §3 forbids, chosen to make a signal
+number.** That would be exactly the tuned constant the anti-goal blacklist forbids, chosen to make a signal
 look clean rather than because it is right.
 
 We do not do that. Two honest responses instead:

@@ -88,7 +88,7 @@ else
 fi
 
 echo "== 5. scope =="
-# Anything from CLAUDE.md §5 'not building' that would show up as a file.
+# Anything from the declared scope 'not building' that would show up as a file.
 ls src/ 2>/dev/null | grep -iE 'governance|token|frontend|oracle|ml|score' >"$TMP/gate_scope.log"
 [ ! -s "$TMP/gate_scope.log" ]; check $? "no out-of-scope modules in src/"
 

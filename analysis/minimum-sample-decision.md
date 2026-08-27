@@ -2,7 +2,7 @@
 
 **Recorded 2026-08-25, BEFORE running any numbers at any N.** That ordering is the whole point: a
 sample size chosen after seeing which value flatters the result is a tuned constant, which
-`CLAUDE.md` §3 forbids. This one is derived from the metric's own arithmetic.
+the anti-goal blacklist forbids. This one is derived from the metric's own arithmetic.
 
 ---
 
