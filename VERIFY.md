@@ -63,7 +63,8 @@ Everything else, decide yourself and report at the gate.
 3. A stage misses its date.
 4. Any pressure to make a fee vary by address.
 5. S4 fires — a real "fuzzy" verdict.
-6. Stage 5 (freeze, Sep 1 12:00) looks threatened.
+6. The **Sep 3 submission** looks threatened, or Stage 7 (video) cannot be recorded in time.
+7. Anything would require a **mechanism change** — the code is frozen as of Aug 30.
 
 **Not escalations:** failing tests, infra outages, dependency problems, refactors, scope reductions inside a stage, anything the gate script catches. Fix and report.
 

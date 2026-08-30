@@ -1,7 +1,14 @@
 # T1 runbook — Brevis round-trip
 
-State as of 2026-08-25. The 3 GiB trusted setup is **downloaded and verified**; everything below is
-what remains. Steps 1–3 need no credentials. Step 4 needs a funded Sepolia key.
+**Updated 2026-08-30. T1a PASSED — this runbook is now largely a record, not a to-do list.**
+
+The 3 GiB trusted setup is downloaded and verified, keys were generated in 13.6 seconds, and a proof
+was generated and verified against the vk twice. What remains is the on-chain callback, blocked on a
+Brevis-side gateway outage and a funded Sepolia key.
+
+**Important scope note:** everything below was done with the **upstream example circuit**, not
+`DirectionalBalanceCircuit`. The prover entrypoint still instantiates `&circuits.AppCircuit{}`, so
+our production circuit has no proving key and **no vk hash**. See `analysis/roadmap.md`.
 
 ---
 
@@ -13,20 +20,29 @@ what remains. Steps 1–3 need no credentials. Step 4 needs a funded Sepolia key
 | Go module deps | downloaded |
 | `brevis/app` npm deps | installed |
 | `brevis/contracts` npm deps | installed, `npx hardhat compile` succeeds (6 contracts) |
-| Circuit | compiles — 857,948 constraints |
+| Circuit (example) | compiles — 857,942 constraints |
+| **Setup / keys** | **DONE — 13.6s.** pk 67,143,336 bytes, vk 34,368 bytes, cached content-addressed |
+| **Local proof generation** | **DONE — generated and verified against the vk, twice** |
+| **vk hash (example circuit)** | `0x1cb76a97800eca38048ce06ba3199638113b0218e56ed9c9b212fbedbd8a79fc` |
 
 ## Not done
 
 | Item | Blocker |
 |---|---|
-| Proving/verifying keys | **memory** — see below |
-| Local proof generation | needs keys |
-| Gateway submission | needs a proof |
-| On-chain callback | needs a funded Sepolia key |
+| Gateway submission | **Brevis-side outage** — gRPC `RST_STREAM`, reproduced ~10 min apart *after* proofs generated successfully. Sponsor infrastructure, not our code. **Not a gate.** |
+| On-chain callback | the outage above, plus a funded Sepolia key |
+| **Production circuit setup** | `cmd/main.go` still points at the example circuit — see the scope note above |
 
 ---
 
-## The memory blocker
+## The memory blocker — RESOLVED
+
+> **Resolved 2026-08-25 by a reboot.** Peak RSS was **4.78 GB**, not the 7–10 GB estimated below;
+> the estimate was high. Setup then completed in 13.6 seconds. Kept for the record because the
+> reasoning about `validateFile` and `UnsafeReadFrom` is still accurate, and because setup is
+> content-addressed — swapping in a new circuit regenerates keys but never re-downloads the SRS.
+
+### Original analysis
 
 `prover.NewService` → `readOrSetup` → `sdk.Setup` → `srs.NewSRS` does two expensive things:
 
@@ -100,7 +116,7 @@ circuit's output, with `vkHash` set and matching.
 
 Not before. A locally generated proof is **not** the gate — the round trip is.
 
-## If it does not close by Aug 26
+## Historical note
 
-Per the go/no-go gate the hard switch is **Aug 28 EOD**, and Vigil needs six days. Treat end of Aug 26
-as the real decision point rather than running the clock to the 28th.
+The switch-to-Vigil decision this section once described is **closed**. T1a passed on Aug 25 and
+Vigil was abandoned. Nothing here should be read as a live decision.

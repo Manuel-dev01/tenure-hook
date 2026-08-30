@@ -1,3 +1,8 @@
+> **SUPERSEDED by `analysis/sensitivity.md`.**
+> Kept as a record: it is where the S4 trap — picking the window that flatters the result —
+> was named *before* it could be walked into. The final table, and the N = 20 sample rule
+> that removes the fragility, are in `sensitivity.md`. Do not cite the numbers here as current.
+
 # Lookback sensitivity — preliminary, Stage 2
 
 Captured during Stage 2. The full table is a Stage 4 deliverable; these are the first real numbers

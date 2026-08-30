@@ -1,5 +1,22 @@
 # Submission checklist — Sep 2/3
 
+**Updated 2026-08-30.** Three checks that were manual are now machine-enforced, in both
+`scripts/gate.sh` and CI. Run `bash scripts/gate.sh` first; it covers everything marked *(auto)*.
+The manual wording is kept so the check survives the script being wrong.
+
+## Automated — `bash scripts/gate.sh` must exit 0
+
+- [ ] *(auto)* `forge fmt --check` clean
+- [ ] *(auto)* `forge test --isolate` — **0 failed and 0 skipped.** A skip is not a pass; without
+      `--isolate` the cross-transaction tests silently skip
+- [ ] *(auto)* `scripts/check_pointers.py` — every README `file:line` pointer resolves to the symbol
+      named beside it. `forge fmt` reflows sources and drifts these silently
+- [ ] *(auto)* no banned identifiers in `src/`
+- [ ] *(auto)* no dynamic-fee machinery in `src/`
+- [ ] *(auto)* hook declares `beforeSwapReturnDelta: false`
+- [ ] *(auto)* circuit contains no price/oracle reference
+- [ ] CI green on the pushed commit
+
 Line items, not runbook steps. Each is something that can be silently skipped in a rush and cost
 either the submission or a question on stage. Tick nothing from memory.
 
@@ -42,6 +59,21 @@ either the submission or a question on stage. Tick nothing from memory.
 - [ ] No uncredited copied code. `brevis/ATTRIBUTION.md` current; v4-core/periphery derivations
       credited in file headers.
 
+## Disclosures — every one of these must appear in the README AND on camera
+
+- [ ] **EIP-7702 block pinning.** `brevis-sdk v0.3.12` cannot parse type-4 transactions, so proofs
+      use a historical range (anchor 21146236). Blob txs are *not* the cause; type 4 alone is.
+- [ ] **The production circuit has no vk hash yet** — the prover entrypoint still runs the upstream
+      example circuit. Either wire it or say so.
+- [ ] **Router-batched unsigned users share one per-transaction bucket.** Escapable free by signing
+      a zero-standing credential.
+- [ ] **Cross-transaction splitting within a block still evades the cap.**
+- [ ] **Opening-leg blindness** — the hook never sees the first leg of a composite operation.
+- [ ] **One-sided flow is 1.3% of volume** on the replayed pool. The mechanism is live but narrow.
+- [ ] **Tranche sizing has a real cost.** Below ~500,000 USDC, base depth caps a fifth of ordinary
+      retail flow. Median long-tail swap is 3,563 USDC.
+- [ ] **Gateway submission was unavailable** during the build window (Brevis-side outage).
+
 ## Claims discipline
 
 - [ ] Every capability claimed in the README or video is demonstrable. Functionality is graded
@@ -49,3 +81,7 @@ either the submission or a question on stage. Tick nothing from memory.
 - [ ] The Roundtrip falsification is presented as a deliberate result, not an apology.
       `analysis/roundtrip-negative-result.md` reproduces from a clean checkout.
 - [ ] Anything narrowed late is narrowed **in the claim**, not left overclaimed in prose.
+- [ ] **We do NOT claim to improve LP outcome anywhere.** Any reference price would determine the
+      sign of the result. The sensitivity is published as the reason.
+- [ ] Clone instructions say **`--recurse-submodules`** — `lib/*` are gitlinks and a plain clone
+      will not build.
