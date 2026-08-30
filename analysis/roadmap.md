@@ -51,7 +51,16 @@ remaining Brevis limitation is gateway submission only, which is a sponsor outag
 - [ ] **Limitations section**, covering all of:
       EIP-7702 block pinning · router-batched unsigned users sharing a per-transaction bucket ·
       cross-transaction splitting within a block · opening-leg blindness · gateway submission
-      unavailable (sponsor outage) · one-sided flow being 1.3% of volume.
+      unavailable (sponsor outage, the only remaining Brevis caveat).
+- [ ] **Impact section leads with volume-weighted mean accessible depth (6721 bps / 67.2%)**, not
+      the 1.3% one-sided figure. State the nuance: the 8.8% held near the floor is one-sided actors
+      *plus* addresses not yet measurable.
+- [ ] **State the two-fixture proof design as evidence**: 17/15 -> 9375 bps and 29/0 -> 0 bps,
+      expectations computed from raw logs independently, script exits non-zero on mismatch. A
+      verifying proof only shows the circuit ran; two fixtures differing in the predicted direction
+      is what makes it evidence. Same S5 logic as the min->max mutation.
+- [ ] **Write `scripts/Demo.s.sol` — it does not exist yet.** Must use PRE-GENERATED proofs and show
+      verification plus decoded output. Proving takes ~100s, so nothing may prove live on camera.
 - [ ] Clone instructions must say **`--recurse-submodules`** — `lib/*` are gitlinks and a plain
       clone will not build.
 - [ ] Keep the Roundtrip falsification linked as a documented negative result.

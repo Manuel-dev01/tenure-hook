@@ -52,6 +52,39 @@ The metric is not noise. It finds addresses that are *perfectly* one-sided over 
 
 445 swaps, every single one in the same direction, is not a coincidence of the window.
 
+## 2b. Accessible depth across real traffic — the headline number
+
+Per-swap depth entitlement, weighted by the volume actually traded:
+
+| measure | value |
+|---|---|
+| **volume-weighted mean accessible depth** | **6721 bps — 67.2% of tranche** |
+| swap-weighted mean accessible depth | 5984 bps — 59.8% |
+| floor (no standing) | 500 bps |
+| ceiling | 10000 bps |
+
+**The average dollar on this pool moves at roughly two-thirds of the tranche, while the average
+address sits near the floor.** That gap is the mechanism working as designed: depth follows proven
+behaviour, not headcount.
+
+Volume by accessible-depth band:
+
+| band | share of volume |
+|---|---|
+| 0–1999 bps | **8.8%** |
+| 2000–3999 bps | 0.6% |
+| 4000–5999 bps | 13.8% |
+| 6000–7999 bps | 41.5% |
+| 8000–10000 bps | 35.3% |
+
+**A nuance that matters and is easy to state wrongly.** That 8.8% is *not* the same population as
+the 1.3% one-sided figure below. It is one-sided actors (1.3%) **plus** addresses that have not
+traded enough to be measured at all (~7.5%). Restraint therefore falls on two different groups:
+those measured and found one-sided, and those not yet measurable. Only the first is the flow the
+mechanism is aimed at; the second is the cost of requiring evidence before granting depth.
+
+---
+
 ## 3. The uncomfortable finding: one-sided flow is 1.3% of volume
 
 | balance band | addresses | share of all volume | depth received |
