@@ -24,24 +24,22 @@ behaviour it is out of scope — record it here instead of building it.
 | 4 — A/B evidence | done. Splitting buys nothing; LP-benefit claim declined |
 | 5 — mainnet replay | done. Mechanism live but narrow |
 
-## The one outstanding technical item
+## The outstanding technical item — RESOLVED 2026-08-30
 
-**The prover still runs the upstream example circuit**, not ours —
-`brevis/prover/cmd/main.go` instantiates `&circuits.AppCircuit{}`, and `~/circuitOut` holds only the
-example's digest.
+The prover now runs `DirectionalBalanceCircuit`. It has a proving key and a real vk hash:
 
-So `DirectionalBalanceCircuit` has no proving key and **no vk hash**, and `setVkHash` cannot yet be
-called with a real value for it. What *is* established: the ZK round trip works (T1a, *example*
-circuit) and our circuit's computation is correct (S5, gnark test engine, real logs). The two have
-never been joined.
+```
+circuit digest 0x871ee23536ab098ff35622c13fec9af3c44606cbf28dc26dd1840018d326b2e5
+vk hash        0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b
+constraints    1,583,108
+```
 
-Two acceptable resolutions, and only these:
+Two real proofs generated and verified against real mainnet swap logs from the pinned range —
+a balanced trader (9375 bps) and a one-sided one (0 bps), both matching figures computed
+independently from the logs. Full record in `analysis/production-circuit-proof.md`.
 
-1. **Wire it** — point `main.go` at `DirectionalBalanceCircuit` and regenerate setup. Fast, because
-   the 3 GiB SRS is cached content-addressed; only key generation reruns.
-2. **Disclose it** plainly in the README and on camera.
-
-Doing neither is the only wrong answer.
+**Consequence for Stage 6:** the README can claim the full path rather than disclose a gap. The
+remaining Brevis limitation is gateway submission only, which is a sponsor outage and not a gate.
 
 ---
 
@@ -52,8 +50,8 @@ Doing neither is the only wrong answer.
       `scripts/check_pointers.py`; keep it passing).
 - [ ] **Limitations section**, covering all of:
       EIP-7702 block pinning · router-batched unsigned users sharing a per-transaction bucket ·
-      cross-transaction splitting within a block · opening-leg blindness · the missing production
-      vk hash · one-sided flow being 1.3% of volume.
+      cross-transaction splitting within a block · opening-leg blindness · gateway submission
+      unavailable (sponsor outage) · one-sided flow being 1.3% of volume.
 - [ ] Clone instructions must say **`--recurse-submodules`** — `lib/*` are gitlinks and a plain
       clone will not build.
 - [ ] Keep the Roundtrip falsification linked as a documented negative result.

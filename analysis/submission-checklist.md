@@ -63,8 +63,9 @@ either the submission or a question on stage. Tick nothing from memory.
 
 - [ ] **EIP-7702 block pinning.** `brevis-sdk v0.3.12` cannot parse type-4 transactions, so proofs
       use a historical range (anchor 21146236). Blob txs are *not* the cause; type 4 alone is.
-- [ ] **The production circuit has no vk hash yet** — the prover entrypoint still runs the upstream
-      example circuit. Either wire it or say so.
+- [ ] ~~The production circuit has no vk hash~~ **RESOLVED.** Circuit is wired; vk hash is
+      `0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b`. **This is the value
+      `setVkHash` takes** — read `vkHash()` back after deploying to confirm.
 - [ ] **Router-batched unsigned users share one per-transaction bucket.** Escapable free by signing
       a zero-standing credential.
 - [ ] **Cross-transaction splitting within a block still evades the cap.**

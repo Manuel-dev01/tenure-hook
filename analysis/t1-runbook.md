@@ -6,9 +6,10 @@ The 3 GiB trusted setup is downloaded and verified, keys were generated in 13.6 
 was generated and verified against the vk twice. What remains is the on-chain callback, blocked on a
 Brevis-side gateway outage and a funded Sepolia key.
 
-**Important scope note:** everything below was done with the **upstream example circuit**, not
-`DirectionalBalanceCircuit`. The prover entrypoint still instantiates `&circuits.AppCircuit{}`, so
-our production circuit has no proving key and **no vk hash**. See `analysis/roadmap.md`.
+**Important scope note:** everything below was done with the **upstream example circuit**, which is
+what closed the T1a round-trip gate. The production circuit `DirectionalBalanceCircuit` was wired
+separately on Aug 30 and has its own keys, vk hash and verified proofs — see
+`analysis/production-circuit-proof.md`.
 
 ---
 
@@ -31,7 +32,7 @@ our production circuit has no proving key and **no vk hash**. See `analysis/road
 |---|---|
 | Gateway submission | **Brevis-side outage** — gRPC `RST_STREAM`, reproduced ~10 min apart *after* proofs generated successfully. Sponsor infrastructure, not our code. **Not a gate.** |
 | On-chain callback | the outage above, plus a funded Sepolia key |
-| **Production circuit setup** | `cmd/main.go` still points at the example circuit — see the scope note above |
+| ~~Production circuit setup~~ | **DONE Aug 30** — `cmd/main.go` now runs `DirectionalBalanceCircuit`; vk hash `0x028f783f…4e3b0b` |
 
 ---
 

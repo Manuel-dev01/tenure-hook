@@ -3,7 +3,8 @@
     "version": "0.0.1",
     "description": "Template repo for quickstarting Brevis integration",
     "scripts": {
-        "start": "ts-node src/index.ts"
+        "start": "ts-node src/index.ts",
+        "prove": "ts-node src/prove_standing.ts"
     },
     "author": "Patrick Mao",
     "license": "MIT",
