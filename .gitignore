@@ -32,3 +32,6 @@ brevis/**/node_modules/
 
 # Local-only project guardrails, deliberately untracked
 CLAUDE.md
+
+# gate.sh scratch output
+.gate-tmp/
