@@ -43,6 +43,28 @@ S1–S4 are about trusting the wrong **evidence**. S5 is different: the evidence
 
 ---
 
+## 2b. Stage 7 — the video is unpatchable
+
+**Every number spoken or shown in the video is re-derived from the artifact that produced it, never
+copied from the README or from an earlier script draft.**
+
+This is S2 wearing documentation clothes. Two live examples, both caught only by re-reading the
+source:
+
+- the README cited the **example** circuit's 857,942 constraints and vk hash `0x1cb76a97...` as
+  though they were the production circuit's
+- it claimed everything under `brevis/` was "upstream's example code, unmodified" — false once the
+  circuit was wired, and false about *code provenance* in a submission where uncredited code is a
+  disqualifying gate
+
+Both were errors of copying forward rather than looking. The README can be corrected after
+submission. **The video cannot.**
+
+Re-derive from: `forge script scripts/Demo.s.sol` for mechanism numbers, the prover log for circuit
+digest / vk hash / constraints, `analysis/mainnet-replay.md` for replay figures.
+
+---
+
 ## 3. Framing check
 
 Read the diff. Then answer:
