@@ -10,9 +10,20 @@ ZK circuit over historical chain data and presented by the trader as an EIP-712 
 Standing is an asset the trader holds, not a property the pool assigns. You are not sorted into a
 bracket — you present a credential you earned.
 
-> **Status: Stage 1 complete.** The hook works standalone with operator-set standing. Capability
-> gates T1a and T2 have both passed. Nothing here prices anything, and no code path adjusts a fee
-> based on standing — see the fee-parity rule, which forbids it outright.
+> **Status: complete and frozen.** The hook, the ZK circuit, the registry, the depth meter, the A/B
+> evidence and the mainnet replay are all done and tested. No code path adjusts a fee based on
+> standing, and the hook does not hold the permission to.
+
+## Quick start
+
+```bash
+git clone --recurse-submodules https://github.com/Manuel-dev01/tenure-hook
+cd tenure-hook
+forge test --isolate
+```
+
+**`--recurse-submodules` is required.** `lib/*` are gitlinks; a plain clone will not build.
+If you already cloned without it: `git submodule update --init --recursive`.
 
 ---
 
@@ -39,6 +50,44 @@ This is the opposite outcome, measured against the one attack that would have ma
 tranching looks harmful at P = 0.98 and beneficial at P = 1.02. Valuing at the unconstrained arm's
 own final price is worse than arbitrary — it is biased toward that arm by construction. So no LP
 value figure is reported, and the sensitivity is published instead.
+
+---
+
+## Impact — measured on 15,804 real mainnet swaps
+
+Replayed against the pinned range on the USDC/WETH 0.05% pool
+([`analysis/mainnet-replay.md`](analysis/mainnet-replay.md)). Every figure below is counted from
+logs; none requires a counterfactual.
+
+| measure | value |
+|---|---|
+| **volume-weighted mean accessible depth** | **6721 bps — 67.2% of the tranche** |
+| swap-weighted mean accessible depth | 5984 bps — 59.8% |
+| floor (no standing) | 500 bps |
+
+**The average dollar on this pool moves at roughly two-thirds of the tranche, while the average
+address sits near the floor. Depth tracks proven behaviour, not headcount.** That gap is the
+mechanism doing its job.
+
+### Who the restraint actually falls on — including people we did not aim at
+
+8.8% of volume sits in the lowest depth band. **That is not one population, and the distinction
+matters:**
+
+| group | share of volume | is this the target? |
+|---|---|---|
+| measured, and one-sided | 1.3% | **yes** |
+| not enough history to be measured | ~7.5% | **no** |
+
+The second group's only characteristic is being new to this pool. They are **not excluded** — they
+trade at base depth like every unsigned swapper, and standing is permissionlessly acquirable by
+trading two-sidedly. But they pay part of the cost of a mechanism aimed at someone else, and that is
+the honest price of requiring evidence before granting depth.
+
+**This compounds with tranche sizing.** An operator who sets the tranche too low pushes more
+ordinary flow into that same floor: below roughly 500,000 USDC, base depth caps about a fifth of
+ordinary retail swaps, whose median is 3,563 USDC. The two caveats are one point — *the cost of the
+mechanism lands partly on people it is not aimed at, and a badly sized tranche makes that worse.*
 
 ---
 
@@ -171,10 +220,36 @@ See [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md).
 | **T1b** | Does gateway submission reach Sepolia? | blocked by a Brevis-side gateway outage. **Not a gate** — deployment is not required by the rules |
 | **T2** | Can the hook bind a swap to a trader unforgeably, and fail closed? | **PASS** — 10/10 |
 
-T1a evidence: circuit 857,942 constraints, setup 13.6s, vk hash
-`0x1cb76a97800eca38048ce06ba3199638113b0218e56ed9c9b212fbedbd8a79fc`, proof generated **and verified
-against the vk** twice (the prover's `prove()` returns an error rather than a proof if verification
-fails, so proof output *is* verification).
+The gate was closed with an example circuit. **The production circuit has since been wired and
+proven in its own right:**
+
+```
+circuit digest  0x871ee23536ab098ff35622c13fec9af3c44606cbf28dc26dd1840018d326b2e5
+vk hash         0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b
+constraints     1,583,108        setup 16.4s        proving ~100s
+```
+
+That vk hash is the value `setVkHash` takes; the deploy script reads it back and reverts on
+mismatch.
+
+### The proof is verified by two fixtures, not one
+
+A verifying proof only shows the circuit *ran*. It says nothing about whether the circuit computes
+directional balance. So the production circuit is proven against **two real mainnet addresses whose
+behaviour was determined from raw logs, independently of the circuit**:
+
+| fixture | real behaviour | expected | **circuit output** |
+|---|---|---|---|
+| `0x0f4a1d…7eca3` | 17 buys / 15 sells | 9375 bps | **9375 bps** |
+| `0x308c6f…5e2a6` | 29 buys / 0 sells | 0 bps | **0 bps** |
+
+Two fixtures differing in the predicted direction is what makes this evidence rather than a
+demonstration — and `npm run prove` **exits non-zero on mismatch**, so it is a check, not a printout.
+This is the same discipline applied to the circuit's own arithmetic elsewhere: mutating
+`min(buys,sells)` to `max` turns the unit test red naming the exact cause.
+
+Reproduce: `cd brevis/prover && go run ./cmd/main.go`, then `cd brevis/app && npm run prove -- balanced`.
+Full record in [`analysis/production-circuit-proof.md`](analysis/production-circuit-proof.md).
 
 ### T2 — the identity gate
 
@@ -207,17 +282,19 @@ is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDe
 
 | Partner | Where | What it does |
 |---|---|---|
-| **Brevis** | [`brevis/prover/circuits/circuit.go`](brevis/prover/circuits/circuit.go) | app circuit proving historical chain activity |
-| **Brevis** | [`brevis/app/src/index.ts`](brevis/app/src/index.ts) | proof request, local proving, gateway submission to Sepolia |
-| **Brevis** | [`brevis/contracts/`](brevis/contracts/) | `BrevisApp` callback receiver |
+| **Brevis** | [`brevis/prover/circuits/directional_balance.go`](brevis/prover/circuits/directional_balance.go) | **the production circuit** — proves directional balance from swap logs only |
+| **Brevis** | [`brevis/prover/cmd/main.go`](brevis/prover/cmd/main.go) | prover service; instantiates the production circuit |
+| **Brevis** | [`brevis/app/src/prove_standing.ts`](brevis/app/src/prove_standing.ts) | builds the proof request, proves locally, verifies the decoded output |
 | **Brevis** | `src/TenureRegistry.sol:83` | `handleProofResult` — ZK callback, `_vkHash` validated |
 | **Brevis** | `src/lib/BrevisAppZkOnly.sol:9` | vendored `BrevisAppZkOnly` callback base |
 | **Uniswap v4** | `src/TenureHook.sol:235` | `_beforeSwap` enforcing the depth entitlement |
 | **Uniswap v4** | `src/TenureHook.sol:136` | `getHookPermissions` — beforeSwap only, no fee power |
 | **OpenZeppelin** | `src/TenureHook.sol:37` | `uniswap-hooks` v1.0.0 `BaseHook` |
 
-Attribution for vendored upstream code: [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). At the T1
-gate, everything under `brevis/` is upstream's example code, unmodified.
+Attribution for vendored upstream code, and which files are ours versus upstream's:
+[`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). The circuit, the prover entrypoint's
+configuration and the proving script are ours; the surrounding scaffolding is upstream's
+quickstart.
 
 ---
 
@@ -227,13 +304,14 @@ gate, everything under `brevis/` is upstream's example code, unmodified.
 forge test --isolate
 ```
 
-47 tests across four suites.
+56 tests across five suites, zero skipped.
 
 | Suite | Tests | What it proves |
 |---|---|---|
-| `TenureHookTest` | 15 | Stage 1 — the depth entitlement, credential binding, fee neutrality |
+| `TenureHookTest` | 21 | the depth entitlement, credential binding, fee neutrality, and the per-transaction meter |
 | `TenureRegistryTest` | 10 | Stage 3 — `_vkHash` validation and the minimum-sample rule |
 | `TenureIdentityTest` | 10 | T2 — identity binding and all fail-closed cases |
+| `LPOutcomeTest` | 3 | Stage 4 — the three-arm A/B and its own S5 mutations |
 | `DiscriminatorTest` | 12 | the Roundtrip falsification, still reproducible |
 
 `--isolate` is required for the cross-transaction half of the Roundtrip Q1 test; without it that
