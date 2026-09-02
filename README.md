@@ -102,7 +102,13 @@ result for our paid query. It decodes through the deployed registry's own `decod
 check it without trusting us:
 
 ```bash
-cast call 0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5   "decodeOutput(bytes)(address,uint16,uint16,uint64,uint64)"   0x308c6fbd6a14881af333649f17f2fde9cd75e2a60000001d0000000001425c5c000000000142a8ad   --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+RPC=https://ethereum-sepolia-rpc.publicnode.com
+REG=0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5
+OUT=0x308c6fbd6a14881af333649f17f2fde9cd75e2a60000001d0000000001425c5c000000000142a8ad
+
+cast call $REG \
+  'decodeOutput(bytes)(address,uint16,uint16,uint64,uint64)' \
+  $OUT --rpc-url $RPC
 
 0x308C6fbD6a14881Af333649f17f2FdE9cd75e2a6   # trader
 0                                            # balanceBps
@@ -111,19 +117,43 @@ cast call 0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5   "decodeOutput(bytes)(addr
 21145773                                     # toBlock
 ```
 
-Those bytes come from the gateway's `GetQueryStatus` response for the query we paid for on Sepolia,
-and they match the one-sided fixture's hand-computed expectation exactly. The proof is generated and
-the output is correct. What has not happened is Brevis submitting the aggregated proof on chain, so
-`brevisCallback` never fired.
+`OUT` is the `circuit_output` field of the gateway's `GetQueryStatus` response for the query we paid
+for on Sepolia, and it matches the one-sided fixture's hand-computed expectation exactly. The proof
+is generated and the output is correct. What has not happened is Brevis submitting the aggregated
+proof on chain, so `brevisCallback` never fired.
+
+**This is not specific to the chain we chose.** Every BrevisRequest deployment Brevis documents was
+surveyed. All are unpaused with active provers registered, and all are receiving no traffic:
+
+| chain | BrevisRequest | window | events |
+|---|---|---|---|
+| Arbitrum One 42161 | `0x91540fe3...`, the one pair in current docs | 4,000,000 blocks | **0** |
+| Sepolia 11155111 | `0xa082F86d...`, the one we paid | 150,000 blocks | **1**, ours |
+| Sepolia 11155111 | `0x841ce48F...`, legacy page | 150,000 blocks | **0** |
+| Optimism 10 | `0x9f5b558c...`, legacy page | 4,000,000 blocks | **0** |
+| Base 8453 | `0x3463b379...`, legacy page | 4,000,000 blocks | **0** |
+| BSC Testnet 97 | `0xF7E9CB6b...`, legacy page | 48,000 blocks | **0** |
+| Arbitrum One 42161 | BrevisProof `0x0fEc0b24...` | 500,000 blocks | **0** |
+| Sepolia 11155111 | BrevisProof `0x70cFEb37...` | 150,000 blocks | **0** |
+
+Measured with `eth_getLogs`, which pruned nodes still serve because logs are not state, and with a
+control: Sepolia WETH returned 122 events over the same endpoint and range shape, so an empty result
+means empty rather than broken. Two limits worth stating: Holesky's public endpoint returned 403, so
+this is every deployment we could reach rather than every deployment; and a window shows no traffic
+recently, not no traffic ever.
+
+So the complete account is: **the gateway holds a correct, decodable result for our paid query, and
+no Brevis deployment we could reach shows fulfilment traffic.** Both halves are checkable by anyone
+with an RPC endpoint and no access of ours.
 
 Because delivery is outstanding, standing in the app is written by the operator registry, the second
 trust model behind the same interface. The figure it holds is not invented either: 9,375 bps over 32
 swaps is the *balanced* fixture's real circuit output, reproducible with `npm run prove -- balanced`.
 The app names which registry it reads, on every screen.
 
-If the callback ever fires it will record **0 bps for `0x308c6fbd…`**, the one-sided fixture, not
+If the callback ever fires it will record **0 bps for `0x308c6fbd...`**, the one-sided fixture, not
 9,375 for the balanced one. Two different fixtures, two different addresses, and the paid query is
-the one-sided one. Full record, including what this cannot show:
+the one-sided one. Full record, including a measurement error we made and retracted:
 [`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
 
 ---
@@ -226,7 +256,7 @@ Every one we know of, stated here rather than left to be found.
 
 | Limitation | Detail |
 |---|---|
-| **No proof has landed on chain** | Every step we own works: the circuit proves standing, the proof verifies against its verifying key, the gateway accepts the query, the fee is paid on Sepolia, and the gateway holds a correct decodable result for it. Brevis never submitted the aggregated proof, so the callback never fired and standing in the app is operator-written. Measured at 11 h 24 m against a documented 2 minutes. [Record](analysis/brevis-gateway-diagnosis.md). |
+| **No proof has landed on chain** | Every step we own works: the circuit proves standing, the proof verifies against its verifying key, the gateway accepts the query, the fee is paid on Sepolia, and the gateway holds a correct decodable result for it. Brevis never submitted the aggregated proof, so the callback never fired and standing in the app is operator-written. No BrevisRequest deployment we could reach shows any fulfilment traffic, so this is not specific to the chain we chose. [Record](analysis/brevis-gateway-diagnosis.md). |
 | **Proof fixtures use a historical block range** | `brevis-sdk v0.3.12` could not build receipt proofs for blocks containing EIP-7702 transactions, so the fixtures are cut from a pinned pre-Pectra range anchored at block 21,146,236. v0.3.33 pins a go-ethereum fork that does parse type 4, so the constraint is probably lifted, but the fixtures were never re-cut and we do not claim it is fixed. [Detail](analysis/pinned-proving-range.md). |
 | **Cross-transaction splitting still evades the cap** | Transient storage is transaction-scoped, so it clears between transactions. This costs gas and gives up atomicity. |
 | **Router-batched unsigned users share one bucket** | Any of them can sign a zero-standing credential, which is free and permissionless, to isolate themselves. |
