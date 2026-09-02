@@ -22,16 +22,32 @@ either the submission or a question on stage. Tick nothing from memory.
 
 ---
 
-## Security — must be verified on the deployed contract
+## Security
 
-- [ ] **`setVkHash` has been called and returns the circuit's real vk hash.**
+**Deployment is NOT required by the rules, and as of Aug 30 nothing is deployed** — the Brevis
+gateway was down during the build window. Pick a path and tick the matching block. Do not leave the
+deployed-only items unticked and unexplained; an empty checkbox reads as an omission.
+
+### Path A — not deployed (current default)
+
+- [ ] The README and video state plainly that **gateway submission was unavailable** (sponsor-side
+      outage) and that proofs are therefore **generated and verified locally**.
+- [ ] `scripts/Deploy.s.sol` demonstrates the correct `setVkHash` sequence *including the readback*,
+      so the security property is legible in code even though no deployment exists.
+- [ ] `TenureRegistryTest` covers `_vkHash` rejection and callback authorisation — the guarantees
+      are test-backed rather than deployment-backed. Say which, do not imply the other.
+
+### Path B — if a deployment happens before submission
+
+- [ ] **`setVkHash` has been called and `vkHash()` reads back
+      `0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b`.**
       `vkHash` initialises to `bytes32(0)`. `handleProofResult` does
-      `require(vkHash == _vkHash, "invalid vk")` — with `vkHash` unset that check passes **only**
-      for a zero hash, and any misconfiguration here means proofs from an arbitrary circuit could
-      drive our callback. There is a published audit finding against exactly this pattern.
-      Verify by reading `vkHash()` back from the deployed contract, not by trusting the deploy log.
+      `require(vkHash == _vkHash, "invalid vk")` — with `vkHash` unset, that check accepts **only**
+      a zero hash, and a misconfiguration means proofs from an arbitrary circuit could drive our
+      callback. There is a published audit finding against exactly this pattern.
+      **Read it back from the contract. Do not trust the deploy log.**
 - [ ] Registry rejects a callback from any address other than the Brevis request contract.
-- [ ] Fail-closed tests all still pass against the *deployed* configuration, not just locally.
+- [ ] Fail-closed tests re-run against the *deployed* configuration, not just locally.
 
 ## The fee-parity constraint — the 30% criterion
 
@@ -71,8 +87,11 @@ either the submission or a question on stage. Tick nothing from memory.
 - [ ] **Cross-transaction splitting within a block still evades the cap.**
 - [ ] **Opening-leg blindness** — the hook never sees the first leg of a composite operation.
 - [ ] **One-sided flow is 1.3% of volume** on the replayed pool. The mechanism is live but narrow.
-- [ ] **Tranche sizing has a real cost.** Below ~500,000 USDC, base depth caps a fifth of ordinary
-      retail flow. Median long-tail swap is 3,563 USDC.
+- [ ] **Tranche sizing has a real cost.** At a 500,000 USDC tranche, base depth blocks about a
+      fifth (20.8%) of long-tail swaps — **below that, more**: 28.5% at 250,000, 42.5% at 100,000.
+      Median long-tail swap is 3,563 USDC.
+      *Do not say "below 500,000 … a fifth" — that understates our own cost, and it is the phrasing
+      a judge with the repo open would check.*
 - [ ] **Gateway submission was unavailable** during the build window (Brevis-side outage).
 
 ## Claims discipline

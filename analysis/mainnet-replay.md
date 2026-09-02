@@ -137,8 +137,13 @@ How often base depth (500 bps of tranche) would block them:
 **The tranche is an operator parameter and is reported across a range rather than chosen**, for the
 same reason no reference price was chosen in Stage 4. But the shape matters: a tranche set too low
 turns "nobody is excluded" into a real cost for ordinary users, since a median retail swap is
-3,563 USDC and the 90th percentile is 75,961. An operator setting the tranche below roughly 500,000
-USDC on this pool would be capping a fifth of ordinary retail flow.
+3,563 USDC and the 90th percentile is 75,961. At a 500,000 USDC tranche, base depth blocks 20.8% of
+long-tail swaps on this pool. **Below that it is worse, not equal** — 28.5% at 250,000 and 42.5% at
+100,000, per the table above.
+
+State it that way round. "Below 500,000 it caps a fifth" reads as a ceiling when a fifth is actually
+the *floor* of the cost, and it understates our own downside — the direction of error a judge with
+the repo open would catch.
 
 That is a genuine operational caveat and it belongs on camera.
 

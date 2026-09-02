@@ -85,9 +85,10 @@ trading two-sidedly. But they pay part of the cost of a mechanism aimed at someo
 the honest price of requiring evidence before granting depth.
 
 **This compounds with tranche sizing.** An operator who sets the tranche too low pushes more
-ordinary flow into that same floor: below roughly 500,000 USDC, base depth caps about a fifth of
-ordinary retail swaps, whose median is 3,563 USDC. The two caveats are one point — *the cost of the
-mechanism lands partly on people it is not aimed at, and a badly sized tranche makes that worse.*
+ordinary flow into that same floor. At a 500,000 USDC tranche, base depth blocks **20.8%** of
+long-tail swaps; below that it gets worse — **28.5%** at 250,000 and **42.5%** at 100,000. The
+median long-tail swap is 3,563 USDC. The two caveats are one point — *the cost of the mechanism
+lands partly on people it is not aimed at, and a badly sized tranche makes that worse.*
 
 ---
 
