@@ -107,7 +107,7 @@ reject every real proof.
 Identical to the v0.3.12 results. A version bump that changed the numbers would have meant the
 circuit's meaning moved; it did not.
 
-56 Solidity tests still pass and `scripts/gate.sh` still reports GATE PASS. No contract changed.
+44 Solidity tests still pass and `scripts/gate.sh` still reports GATE PASS. No contract changed.
 
 ---
 
@@ -123,6 +123,21 @@ GATEWAY ACCEPTED THE QUERY
 ```
 
 Reproduce with `npm run gateway` (destination Arbitrum) or `npm run gateway -- 11155111`.
+
+**That nonce is NOT the one that was paid.** The transcript above is a destination-42161 run. The
+query actually paid for is a later destination-11155111 run of the same circuit and fixture, and its
+nonce is **1788341943029**, read from the payment receipt rather than from a console scrollback:
+
+```
+$ cast receipt 0xd5f1a81ba9a7277525dd79ec353d30ea06248fdbcbda946f56826b6ae406fb47 --rpc-url $RPC
+$ cast to-dec 0x000001a0617c7af5
+1788341943029
+```
+
+The `query_hash` is the same in both, because it is a hash of the circuit and inputs; only the nonce
+differs per submission. An earlier version of this file quoted nonce `1788326279553` here and let it
+stand as the paid one, which was wrong. Confirmed by the gateway: querying nonce 1788341943029
+against 42161 returns `code:1012 not found`, so the paid query only ever existed for Sepolia.
 
 **Precision about what this does and does not show.** `PrepareQuery` accepting a query proves the
 gateway will route this circuit. It does **not** prove Brevis will fulfil it on a given destination
@@ -141,7 +156,7 @@ Not done. It requires an on-chain transaction, so it is a deploy decision rather
 |---|---|---|
 | BrevisRequest | `0x91540fe35a245ba83459f6410c86f1aec309b290` | `0xa082F86d9d1660C29cf3f962A31d7D20E367154F` |
 | contract live | yes (`brevisProof()` returns `0x0fEc0b24…`) | yes (`brevisProof()` returns `0x70cFEb37…`) |
-| in current docs | **yes**, the one listed supported pair, mainnet to Arbitrum | no; Sepolia appears only on the legacy page, against the older appsdkv2 gateway |
+| in current docs | **yes**, the one listed supported pair, mainnet to Arbitrum | no, and not on the legacy page either. See the correction below. |
 | costs | real ETH | testnet ETH |
 
 Both contracts are deployed and answer calls; their bytecode prefixes match. **Sepolia is therefore
@@ -173,7 +188,12 @@ fulfilled, which is itself a clean, publishable result.
 5. Wait ~2 minutes. Brevis aggregates and calls `brevisCallback` on the registry, which validates
    `_vkHash` and records the standing. Poll with `queryRequestStatus(_proofId, _nonce)`.
 
-Success is a `StandingRecorded` event carrying 9375 bps for the balanced fixture's address.
+Success is a `StandingRecorded` event carrying **0 bps over 29 swaps for
+`0x308c6fbd6a14881af333649f17f2fde9cd75e2a6`**, the ONE-SIDED fixture. Not 9375, and not the
+balanced fixture's address. The one-sided fixture was chosen for the paid submission because it
+carries 29 receipts rather than 32 and was the cheaper of the two to prove. An earlier version of
+this file named the balanced fixture here, which would have made anyone checking the chain look for
+the wrong event on the wrong address.
 
 ### The fee is genuinely zero, settled, not assumed
 
@@ -270,13 +290,110 @@ correlates payments, but nothing aggregates.
 repo would alter that.** Every step we own is verified working.
 
 This is **not** a fault in our contracts: the registry is configured, the callback target is
-correct, the vk hash matches, and the output is ready and correct. It is the legacy-deployment risk
-named above, now observed rather than predicted. Sepolia is on Brevis' legacy page.
+correct, the vk hash matches, and the output is ready and correct.
+
+**A second correction: the Sepolia address we used is not the one on Brevis' legacy page.** That page
+lists Sepolia as `0x841ce48F9446C8E281D3F1444cB859b4A6D0738C` (SDK v0.2). We used
+`0xa082F86d9d1660C29cf3f962A31d7D20E367154F`, which comes from Brevis' own quickstart repository
+(`brevis/contracts/deploy/TokenTransferZkOnly.ts:12`, commented "Sepolia Brevis Request Contract
+Address"). So the earlier line "Sepolia is on Brevis' legacy page" was wrong: our deployment is on
+neither the current page nor the legacy page. Both Sepolia deployments were surveyed and both are
+receiving no traffic, so the distinction does not change the outcome, but the claim as written was
+false.
 
 **The limit of what this shows.** 47 minutes of silence does not prove fulfilment workers are off;
 a badly backed-up queue looks identical from outside. The claim is bounded by what was measured:
 *no callback within 47 minutes*. Do not upgrade it to *"Brevis has shut Sepolia down"*, which is a
 claim about their infrastructure that we cannot see.
+
+### Re-checked 2026-09-02 21:05 UTC, 11 h 24 m after payment
+
+Nothing had moved. What the re-check added is not more waiting, it is four things that were not
+established before.
+
+**1. The gateway is holding a correct, decodable result.** `GetQueryStatus` returns `circuit_output`
+populated, and it decodes through the deployed registry's own `decodeOutput`, not through a
+hand-written parser:
+
+```
+$ cast call 0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5     "decodeOutput(bytes)(address,uint16,uint16,uint64,uint64)"     0x308c6fbd6a14881af333649f17f2fde9cd75e2a60000001d0000000001425c5c000000000142a8ad     --rpc-url $RPC
+
+0x308C6fbD6a14881Af333649f17f2FdE9cd75e2a6
+0
+29
+21126236
+21145773
+```
+
+0 bps over 29 swaps, block range 21,126,236 to 21,145,773, which is the one-sided fixture exactly and
+sits under the pinned anchor at 21,146,236. Anyone can reproduce this from the raw gateway response
+without trusting us. **This is the strongest available statement short of a callback**: the work is
+finished and correct, and only delivery is outstanding.
+
+**2. The fee we paid was right, and the contract says so.** `cast tx` shows `value 0`, and the
+`RequestSent` event BrevisRequest emitted itself carries `fee` as its fourth field, also 0:
+
+```
+RequestSent(bytes32 proofId, uint64 nonce, address refundee, uint256 fee, (address,uint64) callback, uint8 option)
+```
+
+The amount is therefore confirmed by the counterparty contract rather than by our reading of a
+gateway quote, and an underpayment would have reverted `sendRequest` rather than emitting.
+
+**3. Resubmitting the proof changes nothing, and costs nothing.** `SubmitAppCircuitProof` is a
+gateway RPC keyed on `(query_hash, nonce, target_chain_id)` with no value and no signer
+(`sdk/gateway_client.go:65`, `sdk/app.go:709`), so it cannot incur a second payment. It was called
+once and returned `success:true`; the status stayed `QS_PAID`. The gateway's full RPC surface
+contains no retrigger or refulfil endpoint, so this was the last lever on our side.
+
+**4. The provers are registered and active. No prover has transacted since before our payment.**
+
+| check | Sepolia `0xa082F86d…` |
+|---|---|
+| `paused()` | false |
+| `numProvers()` | 3 |
+| `isActiveProver()` on each | true, true, true |
+| nonce of each, oldest readable block vs head | unchanged |
+
+**A retracted claim, recorded rather than quietly fixed.** The first version of this section said all
+three provers made their last transaction on Sep 1 between 10:33 and 10:35 UTC, and read significance
+into three independently keyed addresses stopping within two minutes of each other. **That was an
+artifact of the measurement.** The last-transaction blocks were found by binary-searching each
+prover's nonce, and the public RPC prunes state beyond a rolling window of roughly 10,000 blocks:
+
+```
+$ cast nonce 0x58b529F9084D7eAA598EB3477Fe36064C5B7bbC1 --block 11612213 --rpc-url $RPC
+Error: server returned an error response: error code -32603: state at block #11612214 is pruned
+$ cast nonce 0x58b529F9084D7eAA598EB3477Fe36064C5B7bbC1 --block 11612300 --rpc-url $RPC
+482
+```
+
+The search converged on the **pruning boundary**, not on the last transaction, and because that
+boundary moves with the chain, two runs an hour apart returned two different "last transaction"
+blocks. The three addresses agreed with each other because they were all reporting the same edge.
+
+What survives is weaker and still useful: each prover's nonce is identical at the oldest readable
+block and at the head, so **no prover has sent a transaction in the last ~10,000 Sepolia blocks**,
+a window that contains our payment and every hour since. What does not survive is any statement
+about when they stopped, or that they stopped together.
+
+**The archive-independent measurement.** `eth_getLogs` is served over wide ranges even by pruned
+nodes, because logs are not state. Counting events on every BrevisRequest deployment Brevis
+documents:
+
+| chain | BrevisRequest | window | events |
+|---|---|---|---|
+| Arbitrum One 42161 | `0x91540fe3…` (current docs, the one supported pair) | 4,000,000 blocks | **0** |
+| Sepolia 11155111 | `0xa082F86d…` (Brevis quickstart, the one we paid) | 150,000 blocks | **1**, ours |
+| Sepolia 11155111 | `0x841ce48F…` (legacy page, SDK v0.2) | 150,000 blocks | **0** |
+| Optimism 10 | `0x9f5b558c…` (legacy page, SDK v0.1) | 4,000,000 blocks | **0** |
+| Base 8453 | `0x3463b379…` (legacy page, SDK v0.1) | 4,000,000 blocks | **0** |
+| BSC Testnet 97 | `0xF7E9CB6b…` (legacy page, SDK v0.2) | 48,000 blocks | **0** |
+| Arbitrum One 42161 | BrevisProof `0x0fEc0b24…` | 500,000 blocks | **0** |
+| Sepolia 11155111 | BrevisProof `0x70cFEb37…` | 150,000 blocks | **0** |
+
+Every deployment is unpaused with active provers registered, and every one of them is receiving no
+traffic at all. This is not specific to the chain we chose.
 
 **Say it exactly this way.** "Paid, accepted, output verified ready, never fulfilled on a chain
 Brevis lists as legacy" is a stronger and more checkable claim than either "it works" or "the
