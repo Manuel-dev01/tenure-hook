@@ -7,12 +7,16 @@
 // verification fails, so receiving proof bytes IS verification.
 //
 // Receipts come from the PINNED PRE-PECTRA RANGE (see analysis/pinned-proving-range.md).
-// brevis-sdk v0.3.12 cannot build receipt proofs against blocks containing EIP-7702 (type 4)
-// transactions, which is why current mainnet blocks are unusable here.
+// That pinning was forced by brevis-sdk v0.3.12, which could not build receipt proofs against
+// blocks containing EIP-7702 (type 4) transactions. v0.3.33 pins a go-ethereum fork that does
+// parse type 4 (core/types/transaction.go: SetCodeTxType = 0x04), so the constraint is believed
+// lifted - but these fixtures have NOT been re-cut against a post-Pectra range, so the pinning
+// stands as a property of the fixtures, not of the SDK.
 //
 // Usage:  npm run prove -- <fixture>        fixture = "balanced" | "onesided"
 
-import { Prover, ProofRequest, ReceiptData, Field, asUint248, ErrCode } from 'brevis-sdk-typescript';
+import { Prover, ReceiptData, Field, asUint248, ErrCode } from 'brevis-sdk-typescript';
+import { ChainScopedProofRequest, SRC_CHAIN } from './chain_scoped_request';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -48,7 +52,7 @@ async function main() {
     console.log(`EXPECTED     : ${f.expected_bps} bps  <- computed from raw logs, NOT by the circuit`);
 
     const prover = new Prover('localhost:33247');
-    const proofReq = new ProofRequest();
+    const proofReq = new ChainScopedProofRequest(SRC_CHAIN);
 
     f.rows.forEach((r, i) => {
         // The index is REQUIRED and must be distinct. The prover always pins by index

@@ -1,6 +1,7 @@
 package circuits
 
 import (
+	"os"
 	"testing"
 
 	"github.com/brevis-network/brevis-sdk/sdk"
@@ -8,10 +9,31 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// TestCircuit exercises UPSTREAM's example circuit, not Tenure's. It is retained because the
+// example circuit is what closed the T1a round-trip gate and its evidence should stay
+// reproducible; Tenure's own circuit is covered by directional_balance_s5_test.go.
+//
+// It has never run as shipped: upstream leaves the RPC as the literal string "RPC_URL", so the
+// constructor fails to dial. Under brevis-sdk v0.3.33 it no longer even reaches that point, because
+// sdk.NewBrevisApp indexes an empty variadic slice (app.go:246). Rather than leave a test that
+// panics on `go test ./...`, it now SKIPS unless a real endpoint is supplied:
+//
+//	TENURE_RPC=https://... go test ./circuits/ -run TestCircuit
+//
+// Skipping is deliberate and stated. It is not evidence of anything, and nothing in the README
+// cites it.
 func TestCircuit(t *testing.T) {
-	rpc := "RPC_URL"
-	localDir := "$HOME/circuitOut/myBrevisApp"
-	app, err := sdk.NewBrevisApp(1, rpc, localDir)
+	rpc := os.Getenv("TENURE_RPC")
+	if rpc == "" {
+		t.Skip("set TENURE_RPC to run upstream's example-circuit test; it needs a live archive endpoint")
+	}
+	localDir := t.TempDir()
+	// See directional_balance_s5_test.go for why this is not sdk.NewBrevisApp.
+	app, err := sdk.NewBrevisAppWithConfig(&sdk.BrevisAppConfig{
+		SrcChainId: 1,
+		RpcUrl:     rpc,
+		OutDir:     localDir,
+	})
 	check(err)
 
 	txHash := common.HexToHash(

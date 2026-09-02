@@ -29,11 +29,15 @@ import (
 // the circuit is wrong.
 //
 // WHY MOCK RECEIPTS. Supplying field values directly exercises the circuit's COMPUTATION without
-// the MPT-proof path. That path is deliberately not under test here, and cannot be: brevis-sdk
-// v0.3.12 fails to build receipt proofs against recent mainnet blocks with
-// "transaction type not supported", because constructing the trie requires decoding every
-// transaction in the block and current blocks contain blob/7702 types the SDK cannot parse.
-// The proof path is covered separately by the T1a round trip, which used an older block.
+// the MPT-proof path. Keeping the two separate is the point: this test should fail for arithmetic
+// reasons only, never because an RPC or a block encoding moved.
+//
+// It also used to be a necessity. Under brevis-sdk v0.3.12 the proof path could not run against
+// recent mainnet blocks at all - it failed with "transaction type not supported", because building
+// the trie decodes every transaction in the block and current blocks carry EIP-7702 (type 4) that
+// the SDK could not parse. v0.3.33 pins a go-ethereum fork that does parse type 4, so that is
+// likely no longer true; it has not been retested, and this test does not depend on it either way.
+// The proof path is covered separately by the T1a round trip and by the two production fixtures.
 
 type mockSwap struct {
 	block   int
@@ -75,15 +79,26 @@ const balancedTrader = "0x51c72848c68a965f66fa7a88855f9f7784502a7f"
 
 func runBalance(t *testing.T, trader string, swaps []mockSwap) (addr common.Address, balanceBps, total, minBlock, maxBlock uint64) {
 	t.Helper()
-	// A live URL is required only because NewBrevisApp dials on construction; mock receipts
+	// A live URL is required only because the constructor dials on construction; mock receipts
 	// carry their own field values and no RPC lookup happens for them.
 	rpc := os.Getenv("TENURE_RPC")
 	if rpc == "" {
 		rpc = "https://ethereum-rpc.publicnode.com"
 	}
-	app, err := sdk.NewBrevisApp(1, rpc, t.TempDir())
+	// NOT sdk.NewBrevisApp. That convenience wrapper is broken in brevis-sdk v0.3.33: it forwards
+	// gatewayUrlOverride[0] from a variadic parameter without checking the length, so calling it
+	// with three arguments panics with "index out of range [0] with length 0" (app.go:246).
+	// Passing a fourth argument avoids the panic but is worse - any explicit gateway URL makes
+	// NewGatewayClient dial with INSECURE credentials (gateway_client.go), which cannot reach the
+	// real TLS gateway. NewBrevisAppWithConfig with an empty GatewayUrl is the one path that both
+	// avoids the panic and keeps TLS.
+	app, err := sdk.NewBrevisAppWithConfig(&sdk.BrevisAppConfig{
+		SrcChainId: 1,
+		RpcUrl:     rpc,
+		OutDir:     t.TempDir(),
+	})
 	if err != nil {
-		t.Fatalf("NewBrevisApp: %v", err)
+		t.Fatalf("NewBrevisAppWithConfig: %v", err)
 	}
 	pool := common.HexToAddress(poolAddr)
 	traderAddr := common.HexToAddress(trader)

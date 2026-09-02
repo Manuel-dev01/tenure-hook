@@ -35,7 +35,7 @@ contract TenureDemo {
     bytes constant PROOF_ONESIDED =
         hex"308c6fbd6a14881af333649f17f2fde9cd75e2a60000001d0000000001425c5c000000000142a8ad";
 
-    bytes32 constant VK_HASH = 0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b;
+    bytes32 constant VK_HASH = 0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8;
 
     address constant BREVIS_REQUEST = address(0xB4E415);
     uint256 constant TRANCHE = 100e18;

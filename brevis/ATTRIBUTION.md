@@ -48,3 +48,17 @@ The trap: the publicnode change was *correct for the 521* and *wrong for histori
 being right for one bug and wrong for a later use is precisely what gets rediscovered painfully.
 The proving range is historical by necessity (EIP-7702, see `analysis/pinned-proving-range.md`), so
 **the prover's RPC must be archive-capable.**
+
+## SDK version — ours, and why it is not upstream's default
+
+The quickstart template ships `brevis-sdk v0.3.12`. We run **v0.3.33**, and restate its `replace`
+directives (`gnark => brevis-network/gnark v0.1.0`, `go-ethereum => celer-network/go-ethereum`) in
+`prover/go.mod`, because a replace in a dependency's go.mod is ignored by the go tool.
+
+This is not a gratuitous bump. Brevis document 0.3.17 as the minimum supported version — *"It is not
+backward-compatible"* — and below it the gateway rejects every query, because older SDKs hard-code
+per-chain dummy input commitments that Brevis has since rotated. The full trace is in
+`analysis/brevis-gateway-diagnosis.md`.
+
+`app/src/chain_scoped_request.ts` is ours: brevis-sdk-typescript 1.3.1 never sets `src_chain_id`,
+which v0.3.33 requires.
