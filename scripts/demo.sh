@@ -229,7 +229,8 @@ What was just demonstrated, in one line each:
   · splitting one large take into several capped legs reverts
   · an unsigned swap still executes, at base depth — nobody is excluded
 
-Not claimed: no proof has landed on any chain. Brevis' aggregation service is
-retired, so standing in the app is operator-written and the app says so.
+Not claimed: no proof has landed on any chain. Our query was accepted, priced
+and paid on Sepolia and reached QS_PAID; no callback arrived in the 47 minutes
+we watched. So standing in the app is operator-written, and the app says so.
 SUMMARY
 exit 0

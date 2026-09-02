@@ -16,7 +16,8 @@ rather than a slide deck. Shot 6 is built around one deliberately.
 | ☐ | `bash scripts/demo.sh` → **19 passed, 0 failed**. If anything is red, fix it before recording. |
 | ☐ | MetaMask on **Sepolia**, using the operator address `0xBCA6…66Fe` (it holds standing 9,375 and 3,000,000 tETH) |
 | ☐ | Sepolia ETH for gas — a swap is ~0.001 |
-| ☐ | **Approve the router once, off-camera.** The first swap otherwise needs two popups and the story stutters. Do a 1,000 tETH swap now to prime it. |
+| ☐ | **Approve the router once, off-camera.** The first swap otherwise needs an extra approval popup and the story stutters. Do a small swap now to prime it. |
+| ☐ | Know the three **preset buttons** — *fills · exceeds the cap · exhausts the meter*. They size themselves from the connected address's live allowance, so you never type an amount or do arithmetic on camera. |
 | ☐ | Browser zoom **125%** — default text is too small to read in a recording |
 | ☐ | Close every other tab. Bookmarks bar off. No notifications. |
 | ☐ | Terminal: dark, large font, `cd` to the repo, window ~100 cols |
@@ -33,6 +34,19 @@ rather than a slide deck. Shot 6 is built around one deliberately.
 | allowance | 235,150 tETH |
 | base depth | 12,500 tETH |
 | hook | `0x8878dbEB…6D0080` |
+
+**What the presets produce** at the operator's 235,150 allowance — they are computed, so you can
+read them off the screen rather than remembering them:
+
+| preset | amount | outcome |
+|---|---|---|
+| fills | 117,575 | swap executes |
+| exceeds the cap | 258,665 | `ExceedsDepthAllowance` |
+| exhausts the meter | 352,725, split into 2 × 176,362.5 | `DepthExhaustedThisTx` |
+
+They work for **any** wallet. A fresh one (allowance 12,500) gets 6,250 / 13,750 / 18,750 and the
+same three outcomes — which is the point: before the presets existed, three of the four behaviours
+needed an amount a visitor had no way to guess.
 
 ---
 
@@ -54,8 +68,11 @@ rather than a slide deck. Shot 6 is built around one deliberately.
 **Do:** scroll to the five numbered steps, then to the disclosure block.
 
 > And this is the part most demos leave out. The hook and registry are live on Sepolia, the circuit
-> proves standing locally — but Brevis' on-chain delivery is retired, so no proof has landed on a
-> chain. Standing here is operator-written, and the page says so before you ask.
+> proves standing locally. What didn't complete is the on-chain delivery — and the first failure
+> there was ours: we'd pinned Brevis' SDK five releases below their documented minimum. With that
+> fixed the gateway accepts and prices our query, we paid the fee, and it reached QS_PAID. Then no
+> callback arrived in the forty-seven minutes we watched. So standing here is operator-written, and
+> the page says so before you ask.
 
 ---
 
@@ -104,14 +121,15 @@ rather than a slide deck. Shot 6 is built around one deliberately.
 
 ## Shot 4 · The order, and the credential — 2:10–3:00
 
-**Do:** click **Swap**. Type **100000**.
+**Do:** click **Swap**. Click the **fills** preset.
 
-> A hundred thousand, comfortably inside my allowance of 235,150.
+> A hundred and seventeen thousand — half my allowance of 235,150. The presets size themselves from
+> whatever this address can actually take, so nothing here is hardcoded to my wallet.
 
 **Do:** point at the credential panel.
 
-> This is what I present to the pool. Bound to this router, this pool, this size, single-use,
-> with a deadline. EIP-712 — I sign it, I hold it, the pool reads it.
+> This is what I'm about to sign. Bound to this router, this pool, this size, single-use, with a
+> deadline. EIP-712 — I sign it, I hold it, the pool reads it.
 >
 > Bound to the router specifically, because the hook never sees my address. It sees whoever opened
 > the lock. A router could claim to be anyone; a signature can't.
@@ -140,43 +158,52 @@ rather than a slide deck. Shot 6 is built around one deliberately.
 
 ## Shot 6 · The cap binds — 4:00–5:00
 
-**Do:** change the amount to **300000**. Click **Execute swap**. Sign.
+**Do:** click the **exceeds the cap** preset. Click **Execute swap**. Sign the credential.
 
-> Three hundred thousand, against an allowance of 235,150.
+> Two hundred and fifty-eight thousand, against an allowance of 235,150.
 
 **Do:** let the constraint panel appear.
 
-> Rejected — and it names the reason. `ExceedsDepthAllowance`: it wanted 300,000 of depth, 235,150
-> was available. That's the hook's own error, quoting its own numbers.
+> Rejected — and it names the reason. `ExceedsDepthAllowance`: it wanted 258,665 of depth, 235,150
+> was available. That's the hook's own error, decoded out of the revert, quoting its own numbers.
 >
-> No transaction was sent. The app simulates first, so a rejection costs nothing.
+> No transaction was sent. The app simulates first, so being rejected costs nothing but a signature.
 
 ---
 
 ## Shot 7 · Splitting doesn't work — 5:00–6:00
 
-**Do:** keep 300000. Tick **split into 2**. Execute. Sign both credentials.
+**Do:** click the **exhausts the meter** preset — it sets the amount *and* ticks "split into 2".
+Execute. Sign both credentials.
 
-> Same size, now split into two legs of 150,000 in one transaction. Each leg is under the cap. Under
-> a per-swap limit this is the obvious way through.
+> Three hundred and fifty-two thousand, split into two legs of a hundred and seventy-six thousand in
+> one transaction. Each leg on its own is under the cap. Under a per-swap limit this is the obvious
+> way through.
 
 **Do:** let the panel appear.
 
-> Different error. `DepthExhaustedThisTx` — the first leg consumed 150,000, and the second one has
-> 85,150 left. Depth is metered per transaction, in transient storage, keyed to the recovered
+> Different error. `DepthExhaustedThisTx` — the first leg consumed its share, and the second one is
+> told what's left. Depth is metered per transaction, in transient storage, keyed to the recovered
 > signer. Signing more credentials cannot raise the ceiling.
 
 **Say it plainly:**
 
-> Two different errors from the same 300,000. That's the difference between a cap and a meter.
+> Two different errors, and neither one is mine — both come out of the hook. That's the difference
+> between a cap and a meter.
 
 ---
 
 ## Shot 8 · Nobody is excluded — 6:00–6:40
 
-**Do:** set amount to **5000**. Click **Swap unsigned**.
+**Do:** type **6000** by hand — do NOT use a preset here. Then click **Swap unsigned**.
 
 > No credential at all. No signature.
+
+**Why 6,000 and not a preset.** The presets size themselves from *your* allowance, and unsigned
+swaps do not use it: with no credential the hook recovers `address(0)`, whose standing is zero, so
+the cap is base depth — 12,500 — no matter who you are. Press *fills* here and the swap is correctly
+refused, which is a true fact about the mechanism and the wrong beat for this shot. Read 12,500 off
+the "base depth" line on screen and pick something under it.
 
 **Do:** confirm, let it land.
 
@@ -237,10 +264,12 @@ cd brevis/app && npm run prove -- balanced
 
 **Then, without being asked:**
 
-> What doesn't work: getting that proof delivered on-chain. Brevis' aggregation service is retired.
-> We paid the fee on Sepolia, the query reached `QS_PAID`, and it never moved. So standing in the
-> app is operator-written — transcribing a figure the circuit really proved, but through the
-> operator path, and the app says so in a banner.
+> What doesn't work: getting that proof delivered on-chain. We paid the fee on Sepolia, the query
+> was accepted, priced, and reached `QS_PAID` — and then no callback arrived in the forty-seven
+> minutes we watched. I won't tell you their service is switched off, because I can't see that; a
+> backed-up queue looks identical from outside. What I can tell you is that nothing came back. So
+> standing in the app is operator-written — transcribing a figure the circuit really proved, but
+> through the operator path, and the app says so in a banner.
 
 ---
 

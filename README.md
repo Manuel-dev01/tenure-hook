@@ -27,7 +27,7 @@ A demonstration pool guarded by the hook, and a UI that talks to it.
 | Standing registry | [`0x2fA2242c…709AaA`](https://sepolia.etherscan.io/address/0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA) — operator-written |
 | Pool | `tETH / tUSD`, fee 0.30%, tranche 250,000 |
 
-Press **Get demo tokens** in the app; the ERC20s have an open faucet, so nothing needs asking us for.
+Press **Get demo tokens** in the app — the demo ERC20s mint on request, so nothing needs asking us for.
 
 **Four behaviours are asserted against the deployed contracts**, matched by error *selector* rather
 than by "it reverted" — a swap can revert for a dozen reasons unrelated to depth:
@@ -45,8 +45,9 @@ forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL
 lost in a refactor, so they are asserted on-chain rather than assumed.
 
 **Standing shown in the app is operator-written, not ZK-delivered**, and the app says so in a
-banner. `TenureRegistry` accepts only a Brevis callback and their aggregation service is retired, so
-against it `standingOf()` returns 0 for every address. `OperatorStandingRegistry` sits behind the
+banner. `TenureRegistry` accepts only a Brevis callback; our query was accepted, priced and paid on
+Sepolia and reached `QS_PAID`, but no callback arrived in the 47 minutes we watched, so against that
+registry `standingOf()` returns 0 for every address. `OperatorStandingRegistry` sits behind the
 same interface for exactly this case. The figure it holds is not invented: 9,375 bps over 32 swaps
 is the balanced fixture's real circuit output, reproducible with `npm run prove -- balanced`.
 

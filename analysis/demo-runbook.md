@@ -108,10 +108,10 @@ click cannot — but it is not a substitute for showing the thing working.
 
 **5. Say what is not true**, before being asked:
 
-> *"The ZK path isn't fully live. The circuit proves standing and the proof verifies, but Brevis'
-> on-chain delivery service is retired — we paid the fee, the query reached QS_PAID, and their
-> aggregation never ran. So standing in the app is operator-written, and the app says so in a banner
-> rather than letting you find out."*
+> *"The ZK path isn't fully live. The circuit proves standing and the proof verifies. We paid the
+> fee on Sepolia, the query reached QS_PAID, and no callback arrived in the forty-seven minutes we
+> watched. So standing in the app is operator-written, and the app says so in a banner rather than
+> letting you find out."*
 
 That beat is worth more than any of the green checks. Everyone demos what works.
 

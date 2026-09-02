@@ -21,9 +21,10 @@ import {DemoERC20} from "../src/DemoERC20.sol";
 ///         standing registry with a figure in it.
 ///
 /// @dev WHY AN OPERATOR REGISTRY AND NOT THE ZK ONE. `TenureRegistry` only accepts a Brevis
-///      callback, and Brevis' aggregation service is retired — measured, see
-///      analysis/brevis-gateway-diagnosis.md. Against it, `standingOf` returns 0 for every address
-///      and the app could only ever show base depth. `OperatorStandingRegistry` sits behind the
+///      callback. Our query was accepted, priced and paid on Sepolia and reached QS_PAID, but no
+///      callback arrived in the 47 minutes we watched — see analysis/brevis-gateway-diagnosis.md,
+///      which declines to upgrade that into a claim about Brevis' infrastructure. Against that
+///      registry, `standingOf` returns 0 for every address and the app could only show base depth. `OperatorStandingRegistry` sits behind the
 ///      same `IStandingRegistry` interface for exactly this case.
 ///
 ///      THE UI MUST SAY SO. Showing operator-written standing under a label claiming a verified

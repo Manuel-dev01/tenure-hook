@@ -239,9 +239,10 @@ benefit, and this is the beat most likely to be repeated in the judging room.
 > informed flow, and any reference price we picked would determine the sign of the result. The
 > sensitivity is published instead.
 >
-> And the ZK path isn't fully live. The circuit proves standing, and the proof verifies — but
-> Brevis' on-chain delivery is retired, so no proof has landed on a chain. Standing in the app is
-> operator-written, and the app says so in a banner rather than letting you find out.
+> And the ZK path isn't fully live. The circuit proves standing, and the proof verifies. We paid
+> the fee on Sepolia and the query reached QS_PAID — then nothing came back in the forty-seven
+> minutes we watched. No proof has landed on a chain. Standing in the app is operator-written, and
+> the app says so in a banner rather than letting you find out.
 
 ---
 
@@ -257,7 +258,7 @@ benefit, and this is the beat most likely to be repeated in the judging room.
 
 ## Timing — measured, not estimated
 
-**715 spoken words**, counted from the quoted blocks in the timed beats:
+**729 spoken words**, counted from the quoted blocks in the timed beats:
 
 ```
 python - <<'EOF'
@@ -270,21 +271,21 @@ EOF
 
 | pace | runtime |
 |---|---|
-| 140 wpm (deliberate) | **5:06 — OVER THE CAP** |
-| 150 wpm (normal technical) | **4:46** |
-| 160 wpm (brisk) | 4:28 |
+| 140 wpm (deliberate) | **5:12 — OVER THE CAP** |
+| 150 wpm (normal technical) | **4:51** |
+| 160 wpm (brisk) | 4:33 |
 
 Plus the two-second pause at 0:22 and whatever the on-screen beats need.
 
 **The Sepolia beat consumed the margin.** At the deliberate pace this script no longer fits, and
 recording long fails a binary gate. Two options:
 
-**1. Record at 150 wpm.** Ordinary technical delivery, not rushed. 4:46 leaves ~14 seconds for the
-pause and the beat transitions. Viable, but there is no room for a slow sentence.
+**1. Record at 150 wpm.** Ordinary technical delivery, not rushed. 4:51 leaves only ~9 seconds for
+the pause and the beat transitions — tight, with no room for a slow sentence.
 
-**2. Cut 47 words and keep 140 wpm** → 4:46 with the same headroom, delivered more slowly. The four
-passages below are the most expendable in the script; each is a line the repo already makes in
-writing:
+**2. Cut 47 words and keep 140 wpm** → 4:52, or cut them *and* record at 150 for 4:32 and real
+headroom. The four passages below are the most expendable in the script; each is a line the repo
+already makes in writing:
 
 | beat | cut | words |
 |---|---|---|

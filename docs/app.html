@@ -711,13 +711,11 @@ async function doSwap(signed) {
   $("amount").disabled = true;
   $("split").disabled = true;
   try {
-    // Cheap client-side check first: never make anyone pay for an approval to discover the cap.
+    // NOTE: no client-side cap pre-check. An earlier version short-circuited here to avoid a
+    // pointless approval, but hoisting staticCall above ensureApproval already makes discovering
+    // the cap free — and the pre-check replaced the HOOK's own revert with our paraphrase of it.
+    // Showing the contract reject the swap is the entire point of the page.
     const amt = orderWei();
-    if (amt > allowanceWei && !$("split").checked) {
-      showConstraint(CONSTRAINTS.ExceedsDepthAllowance(
-        [fmt(amt, dec0) + " " + sym0, fmt(allowanceWei, dec0) + " " + sym0]));
-      return;
-    }
     btn.textContent = signed ? "Signing…" : "Simulating…";
     const legs = await buildLegs(signed);
     // Free simulation before anything is broadcast.
