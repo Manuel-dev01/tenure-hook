@@ -29,7 +29,7 @@ Where does this stage take an input on faith that the sender controls? Is it aut
 What am I treating as confirmed because something told me so, rather than because I checked the artifact?
 
 **S3. Am I inferring an operation from partial state?**
-*Precedent: `beforeSwap` sees a prefix, not an operation. Roundtrip died here. Adverse-selection scoring was the same move one layer out.*
+*Precedent: `beforeSwap` sees a state prefix, not an operation. Adverse-selection scoring is the same move one layer out: inferring intent from what happens afterwards.*
 Does any logic conclude "X is happening" from evidence that is also consistent with Y?
 
 **S4. Am I about to tune a number to make a weak signal look clean?**

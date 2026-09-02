@@ -247,7 +247,7 @@ These are verified against the pinned v4-core, and each one changed a decision.
 
 | Constraint | Consequence |
 |---|---|
-| `beforeSwap` fires **before** `_accountPoolBalanceDelta` (`PoolManager.sol:200` vs `:224`) | A hook sees a state prefix, never the current leg. This falsified the predecessor project outright. The design works with the prefix rather than around it. |
+| `beforeSwap` fires **before** `_accountPoolBalanceDelta` (`PoolManager.sol:200` vs `:224`) | A hook sees a state prefix, never the current leg, so it cannot classify the operation it is inside. The design works with the prefix rather than trying to defeat it. |
 | `IMsgSender.msgSender()` is self-reported | Identity comes from an EIP-712 signature instead. |
 | `sender` in `beforeSwap` is the locker | The credential binds to the locker, not to an EOA. |
 | Transient storage is transaction-scoped | The meter is per transaction, and cross-transaction splitting is disclosed. |

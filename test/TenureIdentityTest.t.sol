@@ -6,8 +6,7 @@ pragma solidity ^0.8.26;
 // One question: can the hook bind a swap to a trader UNFORGEABLY, and does it fail closed when it
 // cannot?
 //
-// This gate exists because it is the same failure class that killed Roundtrip — the hook cannot
-// trust what it is told. Roundtrip trusted a state prefix to describe an operation. Tenure would
+// This gate exists because of one failure class: the hook cannot trust what it is told. Tenure would
 // die the same way if it trusted a router to name the trader: `IMsgSender.msgSender()` is
 // self-reported, and a mechanism granting larger size caps on an unauthenticated claim has no
 // mechanism at all.

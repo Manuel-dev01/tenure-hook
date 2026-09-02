@@ -29,7 +29,7 @@ fi
 echo "== stage $STAGE =="
 
 echo "== 1. tests =="
-# --isolate is required: without it the Roundtrip cross-transaction test skips
+# --isolate is required: without it the cross-transaction meter test skips
 # rather than running, so a bare `forge test` under-reports coverage.
 forge test --isolate >"$TMP/gate_test.log" 2>&1
 check $? "forge test --isolate green (see $TMP/gate_test.log)"

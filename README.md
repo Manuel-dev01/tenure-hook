@@ -14,7 +14,7 @@ through.
 | **App** | https://manuel-dev01.github.io/tenure-hook/app.html |
 | **Landing** | https://manuel-dev01.github.io/tenure-hook/ |
 | **Run everything** | `bash scripts/demo.sh` |
-| **Tests** | 56 passing, 0 skipped |
+| **Tests** | 44 passing, 0 skipped |
 
 ---
 
@@ -29,7 +29,6 @@ through.
 | [Impact](#impact-measured-on-15804-real-mainnet-swaps) | measured on real mainnet traffic |
 | [Limitations](#limitations) | every one we know of |
 | [Partner integrations](#partner-integrations) | Brevis and Uniswap v4, with file pointers |
-| [Repository history](#repository-history) | the predecessor that was falsified |
 | [Documentation map](#documentation-map) | where everything else lives |
 | [Running the tests](#running-the-tests) | suites, pins, attribution |
 
@@ -46,7 +45,7 @@ cd tenure-hook
 bash scripts/demo.sh
 ```
 
-One command exercises the whole project: build, 56 tests, the circuit's arithmetic, the claim gate,
+One command exercises the whole project: build, 44 tests, the circuit's arithmetic, the claim gate,
 the offline mechanism demo, the live Sepolia contracts, and the front end. 19 checks, about 90
 seconds, and it needs **no secret of ours**. The on-chain stage signs with Anvil's public default
 key, whose address has standing written into the demo registry so a stranger can reproduce it.
@@ -149,9 +148,8 @@ together:
 | arm A vs arm B | the cap **binds**. Informed take falls from 80.00 to 5.00. |
 | arm B vs arm C | the cap **cannot be routed around**. The split attack realises byte-identical volume, fees and inventory. |
 
-That pairing is the point. Two weeks earlier this repository's predecessor died because the
-mechanism did not do what its pitch said. This is the opposite outcome, measured against the one
-attack that would have made the cap cosmetic.
+That pairing is the point. A cap that binds but can be routed around is cosmetic, so both halves
+are measured, and the second is measured against the one attack that would defeat it.
 
 **On the benefit claim.** Valuing the arms at a single reference price flips the sign of the result:
 tranching looks harmful at P = 0.98 and beneficial at P = 1.02. Valuing at the unconstrained arm's
@@ -238,22 +236,6 @@ and the proving script are ours. The surrounding scaffolding is upstream's quick
 
 ---
 
-## Repository history
-
-This repository began as **Roundtrip**, a different hook that was **falsified on 2026-08-23**, one
-day after starting. That negative result is kept here deliberately rather than deleted:
-**[`analysis/roundtrip-negative-result.md`](analysis/roundtrip-negative-result.md)**.
-
-The short version: a hook can read the PoolManager's transient deltas mid-swap, which was verified,
-but it cannot classify operations from them, because `beforeSwap` fires at `PoolManager.sol:200`
-while delta accounting happens at `:224`. **A hook never observes an operation. It observes a state
-prefix and infers an operation from it.** Cyclic arbitrage and third-party batch settlement are
-byte-identical at that boundary. The tests still run and still prove it.
-
-Tenure is the successor. Roundtrip's capability is **not** carried into it.
-
----
-
 ## Documentation map
 
 | Document | What it is for |
@@ -268,7 +250,6 @@ Tenure is the successor. Roundtrip's capability is **not** carried into it.
 | [`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md) | what is and is not live in the ZK path, and two wrong explanations we published first |
 | [`analysis/minimum-sample-decision.md`](analysis/minimum-sample-decision.md) | why N = 20, derived before any numbers were run |
 | [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md) | why the fixtures use a historical block range |
-| [`analysis/roundtrip-negative-result.md`](analysis/roundtrip-negative-result.md) | the predecessor's falsification, kept |
 | [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md) | what is ours and what is upstream's |
 
 ---
@@ -279,7 +260,7 @@ Tenure is the successor. Roundtrip's capability is **not** carried into it.
 forge test --isolate
 ```
 
-56 tests across five suites, zero skipped.
+44 tests across four suites, zero skipped.
 
 | Suite | Tests | What it proves |
 |---|---|---|
@@ -287,10 +268,9 @@ forge test --isolate
 | `TenureRegistryTest` | 10 | `_vkHash` validation and the minimum-sample rule |
 | `TenureIdentityTest` | 10 | identity binding and all fail-closed cases |
 | `LPOutcomeTest` | 3 | the three-arm A/B and its own mutation checks |
-| `DiscriminatorTest` | 12 | the Roundtrip falsification, still reproducible |
 
-`--isolate` is required for the cross-transaction half of the Roundtrip test. Without it that test
-skips loudly rather than passing vacuously, and the gate treats a skip as a failure.
+`--isolate` is required for the cross-transaction meter tests. Without it they skip loudly rather
+than passing vacuously, and the gate treats a skip as a failure.
 
 ### Pinned dependencies
 

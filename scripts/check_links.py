@@ -13,26 +13,38 @@ gate flaky, and a 404 on someone else's site is not a defect in this repository.
 import io
 import os
 import re
+import subprocess
 import sys
 
-SKIP_DIRS = {".git", "lib", "node_modules", "out", "cache", "broadcast", ".gate-tmp"}
 PATTERN = re.compile(r"\]\((\.{0,2}/?[A-Za-z0-9_./-]+\.(?:md|sol|go|ts|json|py|sh|html))\)")
+
+
+def tracked_markdown():
+    """Only what ships. Untracked working notes may legitimately reference files that were removed
+    from the repository, and failing the gate on those would punish keeping local notes."""
+    out = subprocess.run(["git", "ls-files", "*.md"], capture_output=True, text=True)
+    if out.returncode != 0:
+        raise SystemExit("  git ls-files failed; run this inside the repository")
+    return [p for p in out.stdout.splitlines() if p.strip()]
+
 
 bad = []
 checked = 0
 
-for root, dirs, files in os.walk("."):
-    dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
-    for name in files:
-        if not name.endswith(".md"):
-            continue
-        path = os.path.join(root, name)
-        text = io.open(path, encoding="utf-8", errors="ignore").read()
-        for m in PATTERN.finditer(text):
-            checked += 1
-            target = os.path.normpath(os.path.join(root, m.group(1)))
-            if not os.path.exists(target):
-                bad.append("%s -> %s" % (path.replace(os.sep, "/"), m.group(1)))
+for path in tracked_markdown():
+    root = os.path.dirname(path) or "."
+    text = io.open(path, encoding="utf-8", errors="ignore").read()
+    for m in PATTERN.finditer(text):
+        checked += 1
+        target = os.path.normpath(os.path.join(root, m.group(1)))
+        # A link must point at something that SHIPS, not merely something on this disk.
+        if not os.path.exists(target):
+            bad.append("%s -> %s  (missing)" % (path, m.group(1)))
+        elif os.path.isfile(target):
+            chk = subprocess.run(["git", "ls-files", "--error-unmatch", target],
+                                 capture_output=True, text=True)
+            if chk.returncode != 0:
+                bad.append("%s -> %s  (exists locally but is NOT tracked)" % (path, m.group(1)))
 
 for b in sorted(set(bad)):
     print("  " + b)

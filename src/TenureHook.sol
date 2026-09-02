@@ -60,7 +60,7 @@ contract TenureHook is BaseHook {
     /// @dev Namespace for the per-transaction consumed-depth accumulator. Hook-local transient
     ///      storage (EIP-1153): persists across every leg of one transaction and is cleared by the
     ///      EVM at transaction end. That lifetime was verified in this repository's Milestone 0
-    ///      work, see analysis/roundtrip-negative-result.md, Q1, so it is a measured property
+    ///      work, verified directly against a real PoolManager, so it is a measured property
     ///      rather than an assumed one.
     bytes32 private constant T_CONSUMED_NAMESPACE = keccak256("tenure.consumedDepth.v1");
 

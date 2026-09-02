@@ -5,7 +5,7 @@ libs = ["lib"]
 test = "test"
 script = "scripts"
 
-# EIP-1153 (tstore/tload) requires Cancun. The entire Roundtrip thesis rests on
+# EIP-1153 (tstore/tload) requires Cancun. The per-transaction depth meter rests on
 # transient storage, so this is load-bearing, not incidental. See the project conventions.
 solc = "0.8.26"
 evm_version = "cancun"

@@ -56,7 +56,7 @@ command fails.
 scoping is deliberate: the demo harness in `scripts/` embeds a whole PoolManager so it can run
 offline, which puts it far over the limit and is fine because it is never deployed.
 
-**2. Tests.** 56 Solidity tests under `--isolate`, and the stage fails if any test **skipped**. A
+**2. Tests.** 44 Solidity tests under `--isolate`, and the stage fails if any test **skipped**. A
 skip is not a pass, and without `--isolate` the cross-transaction tests skip rather than run. Then
 `go test ./...`, which covers the circuit's arithmetic against a figure computed outside the circuit.
 

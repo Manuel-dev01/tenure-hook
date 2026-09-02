@@ -45,7 +45,7 @@ contract StandingRegistryStub {
 ///      identical for every address; standing changes accessible depth only.
 ///
 /// @dev Derived from Uniswap v4-core test scaffolding (BUSL-1.1). Built on `BaseTestHooks` because
-///      this is a throwaway gate, exactly as the Roundtrip probe was — the real hook will use
+///      this is a throwaway gate, not production code. The real hook will use
 ///      OpenZeppelin's `uniswap-hooks` BaseHook (the project conventions).
 contract TenureGateProbe is BaseTestHooks {
     using PoolIdLibrary for PoolKey;
