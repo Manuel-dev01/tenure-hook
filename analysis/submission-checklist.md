@@ -25,13 +25,14 @@ either the submission or a question on stage. Tick nothing from memory.
 ## Security
 
 **Deployment is NOT required by the rules, and as of Aug 30 nothing is deployed** — the Brevis
-gateway was down during the build window. Pick a path and tick the matching block. Do not leave the
+gateway will not route our unregistered app circuit. Pick a path and tick the matching block. Do not leave the
 deployed-only items unticked and unexplained; an empty checkbox reads as an omission.
 
 ### Path A — not deployed (current default)
 
-- [ ] The README and video state plainly that **gateway submission was unavailable** (sponsor-side
-      outage) and that proofs are therefore **generated and verified locally**.
+- [ ] The README and video state plainly that **gateway submission is not wired** because the app
+      circuit is not registered with Brevis, and that proofs are therefore **generated and verified
+      locally**. Do not attribute it to a sponsor outage.
 - [ ] `scripts/Deploy.s.sol` demonstrates the correct `setVkHash` sequence *including the readback*,
       so the security property is legible in code even though no deployment exists.
 - [ ] `TenureRegistryTest` covers `_vkHash` rejection and callback authorisation — the guarantees
@@ -92,7 +93,12 @@ deployed-only items unticked and unexplained; an empty checkbox reads as an omis
       Median long-tail swap is 3,563 USDC.
       *Do not say "below 500,000 … a fifth" — that understates our own cost, and it is the phrasing
       a judge with the repo open would check.*
-- [ ] **Gateway submission was unavailable** during the build window (Brevis-side outage).
+- [ ] **Gateway submission does not work, and the cause is ours.** The gateway is up; it rejects
+      our query with `invalid app circuit chain 1 dummy input commitment 0x127d5d80...`, because an
+      app circuit must be registered with Brevis before the gateway will route it. **Do not call
+      this an outage.** Proofs are generated and verified locally instead.
+      *An earlier `RST_STREAM` against the upstream EXAMPLE circuit may genuinely have been a
+      transient outage; the two were conflated. Only the registration finding is substantiated.*
 
 ## Claims discipline
 

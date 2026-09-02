@@ -218,7 +218,7 @@ See [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md).
 | Gate | Question | Status |
 |---|---|---|
 | **T1a** | Does local Brevis proving work — compile, key-gen, prove, verify? | **PASS** |
-| **T1b** | Does gateway submission reach Sepolia? | blocked by a Brevis-side gateway outage. **Not a gate** — deployment is not required by the rules |
+| **T1b** | Does gateway submission reach Sepolia? | **No — and the reason is ours, not theirs.** The gateway is reachable and rejects the query with `invalid app circuit ... dummy input commitment`: an app circuit must be registered with Brevis before the gateway will route it, and we did not complete that step. **Not a gate** — deployment is not required by the rules |
 | **T2** | Can the hook bind a swap to a trader unforgeably, and fail closed? | **PASS** — 10/10 |
 
 The gate was closed with an example circuit. **The production circuit has since been wired and

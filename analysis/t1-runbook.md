@@ -4,7 +4,7 @@
 
 The 3 GiB trusted setup is downloaded and verified, keys were generated in 13.6 seconds, and a proof
 was generated and verified against the vk twice. What remains is the on-chain callback, blocked on a
-Brevis-side gateway outage and a funded Sepolia key.
+the gateway rejecting our unregistered app circuit (see below) and a funded Sepolia key.
 
 **Important scope note:** everything below was done with the **upstream example circuit**, which is
 what closed the T1a round-trip gate. The production circuit `DirectionalBalanceCircuit` was wired
@@ -30,8 +30,8 @@ separately on Aug 30 and has its own keys, vk hash and verified proofs — see
 
 | Item | Blocker |
 |---|---|
-| Gateway submission | **Brevis-side outage** — gRPC `RST_STREAM`, reproduced ~10 min apart *after* proofs generated successfully. Sponsor infrastructure, not our code. **Not a gate.** |
-| On-chain callback | the outage above, plus a funded Sepolia key |
+| Gateway submission | **Not wired — our gap, not Brevis's.** The gateway is reachable and rejects the query: `invalid app circuit chain 1 dummy input commitment 0x127d5d80...`. Brevis routes only registered app circuits and we did not complete that onboarding. An earlier `RST_STREAM` against the upstream EXAMPLE circuit was a separate, possibly transient failure; the two were conflated. **Not a gate.** |
+| On-chain callback | the gateway rejection above, plus a funded Sepolia key |
 | ~~Production circuit setup~~ | **DONE Aug 30** — `cmd/main.go` now runs `DirectionalBalanceCircuit`; vk hash `0x028f783f…4e3b0b` |
 
 ---

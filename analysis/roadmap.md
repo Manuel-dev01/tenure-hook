@@ -39,7 +39,8 @@ a balanced trader (9375 bps) and a one-sided one (0 bps), both matching figures 
 independently from the logs. Full record in `analysis/production-circuit-proof.md`.
 
 **Consequence for Stage 6:** the README can claim the full path rather than disclose a gap. The
-remaining Brevis limitation is gateway submission only, which is a sponsor outage and not a gate.
+remaining Brevis limitation is gateway submission, which fails because our app circuit is not
+registered with Brevis — our gap, not theirs — and is not a gate.
 
 ---
 
@@ -51,7 +52,7 @@ remaining Brevis limitation is gateway submission only, which is a sponsor outag
 - [ ] **Limitations section**, covering all of:
       EIP-7702 block pinning · router-batched unsigned users sharing a per-transaction bucket ·
       cross-transaction splitting within a block · opening-leg blindness · gateway submission
-      unavailable (sponsor outage, the only remaining Brevis caveat).
+      not wired because the app circuit is not registered with Brevis (our gap, not an outage).
 - [ ] **Impact section leads with volume-weighted mean accessible depth (6721 bps / 67.2%)**, not
       the 1.3% one-sided figure. State the nuance: the 8.8% held near the floor is one-sided actors
       *plus* addresses not yet measurable.
@@ -97,9 +98,9 @@ non-exclusion property. Those are binary gates or the pitch itself.
 ## Contingency — the Brevis gateway is still down
 
 Demo degrades to: proof generated locally, verifier contract deployed, `setVkHash` set, verification
-called with a pre-generated proof. **Say on camera that gateway submission was unavailable during
-the build window.** A sponsor outage costs nothing when disclosed; hidden and noticed, it costs
-Functionality.
+called with a pre-generated proof. **Say on camera that gateway submission is not wired because our
+app circuit is not registered with Brevis** — measured, not assumed. Do not call it an outage: that
+blames a sponsor for our own missing step, and a Brevis engineer may be on the panel.
 
 ## The remaining risk
 

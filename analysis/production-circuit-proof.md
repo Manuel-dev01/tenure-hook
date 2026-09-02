@@ -72,7 +72,7 @@ is declared but **not exported**, and `setCustomInput` takes a plain object it s
 ## Honest scope
 
 This is **local proving and local verification**. Gateway submission to Sepolia remains blocked by
-the Brevis-side outage recorded in the roadmap, and is not a gate — deployment is not required by
+the gateway declining our unregistered app circuit (measured: `invalid app circuit ... dummy input commitment`), and is not a gate — deployment is not required by
 the rules. What is now demonstrated is that the production circuit generates a real, verifying
 proof from real mainnet data and outputs exactly the standing figure derived independently from the
 logs.

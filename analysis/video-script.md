@@ -184,8 +184,9 @@ the judging room.
 > sensitivity is published instead.
 >
 > Also disclosed: proofs are generated against a pre-Pectra block range, because the SDK can't parse
-> EIP-7702 transactions. And Brevis's gateway was down during the build window, so proofs are
-> verified locally.
+> EIP-7702 transactions. And gateway submission isn't wired — Brevis routes queries only for
+> registered app circuits, and we didn't complete that step — so proofs are generated and verified
+> locally instead.
 
 ---
 
