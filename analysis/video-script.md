@@ -13,16 +13,17 @@ turned out to be false; **§0 is the current truth and supersedes anything you r
 |---|---|---|
 | `forge script scripts/Demo.s.sol` | cold open, split beat | Deterministic, no network. Pipe through `sed -n '/== Logs ==/,$p'` — the raw run prints trace noise and a `Gas used:` line above `== Logs ==`. |
 | `forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL` | the "it's live" beat | Runs against the **deployed** Sepolia contracts. Four lines, all four green. |
-| https://manuel-dev01.github.io/tenure-hook/app.html | the "it's live" beat | Connect a wallet and let it read. **Do not execute a swap on camera.** |
+| the product recording (`recording-script.md`) | the "it's live" beat | A real swap through the app, wallet popups and all. Cut the shortest fragment showing one swap filling and one being capped. |
 
 **Filmed out of logical order.** The demo runs proofs → depth → swap → split, which is the right
 logical order and the wrong filmed order: the wow must land by 0:30, and it is *"same swap,
 different outcome."* Open on demo beat **[3]** and backfill.
 
-**On showing the app live.** Reading is safe — standing, allowance, the depth curve are all view
-calls. Executing a swap needs a wallet popup, gas, and a confirmation wait, any of which can stall
-on camera. `VerifyDemo` already proves the cap binds, and proves it more rigorously. **Show the app
-reading; show `VerifyDemo` for the proof.**
+**On showing the app live.** Cut this beat from the full product recording
+(`recording-script.md`), which swaps through the app for real — signature popup, confirmation and
+all. Those confirmations are the evidence that it is a product; do not edit them out. For the ≤5:00
+cut, use the shortest fragment that shows a swap filling and a swap being capped, and keep
+`VerifyDemo` for the rigour, since it matches by error selector.
 
 ---
 
@@ -312,6 +313,6 @@ Do not spend any recovered margin adding content.
 - [ ] Your own voice throughout, no AI narration
 - [ ] Every number spoken re-derived from its artifact, not from the README
 - [ ] Nothing said about Brevis beyond §0
-- [ ] The app was shown **reading**, not executing
+- [ ] The app fragment shows a real swap — the wallet confirmations are the evidence, not noise
 - [ ] Plays logged-out
 - [ ] Repo link points to `main`

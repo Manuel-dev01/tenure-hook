@@ -97,10 +97,14 @@ everything, one fills and one is capped.
 **3. Stop on stage 6.** This is the strongest moment — it is a live public testnet, not a test
 harness, and the failures are named by the hook's own errors.
 
-**4. Open the app**, https://manuel-dev01.github.io/tenure-hook/app.html. Connect a wallet and let it
-*read*: standing, the depth curve, the allowance. **Do not execute a swap in front of an audience** —
-it needs a wallet popup, gas and a confirmation wait, any of which can stall, and stage 6 already
-proved the property more rigorously.
+**4. Open the app**, https://manuel-dev01.github.io/tenure-hook/app.html, and **actually swap
+through it** — signature popup, confirmation, pending spinner and all. That is what makes it a
+product rather than a slide deck, and the shot-by-shot version is in
+[`recording-script.md`](recording-script.md).
+
+Rehearse it once first, and approve the router off-camera so the first swap needs one popup rather
+than two. Stage 6 stays useful as the rigorous proof — it matches by error selector, which a live
+click cannot — but it is not a substitute for showing the thing working.
 
 **5. Say what is not true**, before being asked:
 
