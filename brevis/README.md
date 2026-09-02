@@ -56,34 +56,13 @@ npm run start 0x8a7fc50330533cd0adbf71e1cfb51b1b6bbe2170b4ce65c02678cf08c8b17737
 >[!NOTE]
 >Brevis partner key **IS NOT** required to submit request to Brevis Gateway
 
-# [Contracts](./contracts)
+# Contracts
 
-The app contract [TokenTransferZkOnly.sol](./contracts/contracts/TokenTransferZkOnly.sol) is called
-after you submit proof is submitted to Brevis when Brevis'
-systems submit the final proof on-chain.
-It does the following things when handling the callback:
+Upstream's Hardhat project is **not part of this repository**. It deploys *their* example contract,
+which Tenure does not use: our contracts are in `src/` and our deployments are Foundry scripts under
+`scripts/`. See the [upstream repository](https://github.com/brevis-network/brevis-quickstart-ts)
+for it, and [ATTRIBUTION.md](ATTRIBUTION.md) for what was vendored and from where.
 
-1. checks the proof was associated with the correct vk hash
-2. decodes the circuit output
-3. emit a simple event
-
-## Init
-
-```bash
-cd contracts
-npm install
-```
-
-## Test
-
-```bash
-npm run test
-```
-
-## Deploy
-
-Rename `.env.template` to `.env`. Fill in the required env vars.
-
-```bash
-npx hardhat deploy --network sepolia --tags TokenTransferZkOnly
-```
+Tenure's equivalent of the app contract is `src/TenureRegistry.sol`, which does the same three things
+on callback: it checks the proof carries the expected verifying-key hash, decodes the circuit output,
+and records the result.

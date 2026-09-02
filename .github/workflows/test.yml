@@ -44,6 +44,10 @@ jobs:
         # than run, and a skip is not a pass. scripts/gate.sh enforces the same.
         run: forge test --isolate -vvv
 
+      - name: Check documentation links all resolve
+        # Untracking a document turns every citation of it into a dead end.
+        run: python scripts/check_links.py
+
       - name: Check README file:line pointers still resolve
         # The partner-integrations pointers are a submission binary gate, and
         # `forge fmt` reflows source files, so they drift silently.

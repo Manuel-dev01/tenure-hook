@@ -119,6 +119,9 @@ check $? "README has file:line pointers"
 # ...and they must still RESOLVE. forge fmt reflows files, so a pointer that was
 # correct when written drifts silently. This is a binary gate, so it is verified
 # rather than trusted.
+python scripts/check_links.py >"$TMP/gate_links.log" 2>&1
+check $? "documentation links all resolve (see $TMP/gate_links.log)"
+
 python scripts/check_pointers.py >"$TMP/gate_ptr.log" 2>&1
 check $? "doc file:line pointers still resolve, all documents (see $TMP/gate_ptr.log)"
 
