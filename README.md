@@ -55,6 +55,21 @@ is the balanced fixture's real circuit output, reproducible with `npm run prove 
 ```bash
 git clone --recurse-submodules https://github.com/Manuel-dev01/tenure-hook
 cd tenure-hook
+bash scripts/demo.sh
+```
+
+**One command exercises the whole product** — build, 56 tests, the circuit's arithmetic, the claim
+gate, the offline mechanism demo, the live Sepolia contracts, and the front end. 19 checks, ~90
+seconds, and it needs **no secret of ours**: the on-chain stage signs with Anvil's public default
+key, whose address has standing written into the demo registry so a stranger can reproduce it.
+
+Every stage prints PASS, FAIL, or SKIP **with a reason** — a stage that cannot run says so rather
+than passing quietly. `--offline` skips the network; `--with-proof` also generates a real ZK proof.
+Narrative walkthrough in [`analysis/demo-runbook.md`](analysis/demo-runbook.md).
+
+Just the tests:
+
+```bash
 forge test --isolate
 ```
 
