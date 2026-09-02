@@ -294,7 +294,9 @@ const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function allowance(address,address) view returns (uint256)",
   "function approve(address,uint256) returns (bool)",
-  "function faucet()"
+  // mint, not faucet(): faucet() gives 1,000 and the allowance at full standing is 235,150, so a
+  // visitor would need 236 clicks before they could try a swap anywhere near the cap.
+  "function mint(address,uint256)"
 ];
 const ROUTER_ABI = [
   "function swap((address,address,uint24,int24,address) key, (bool,int256,bytes)[] legs) payable"
@@ -555,9 +557,19 @@ $("execute").onclick = () => doSwap(true);
 $("execute-unsigned").onclick = () => doSwap(false);
 $("faucet").onclick = async () => {
   if (!me) { await connect(); if (!me) return; }
-  const tx = await token0.faucet();
-  await tx.wait();
-  await refreshStanding();
+  const btn = $("faucet");
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = "Minting…";
+  try {
+    // Enough to swap above the cap and watch it bind, which is the point of the page.
+    const tx = await token0.mint(me, ethers.parseUnits("500000", dec0));
+    await tx.wait();
+    await refreshStanding();
+  } catch (e) {
+    showConstraint(explain(e));
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
 };
 
 boot().catch((e) => console.error(e));
