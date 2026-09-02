@@ -57,7 +57,7 @@ analysis/rfh-collision-check.md
 analysis/circuit-claim-decision.md
 analysis/sensitivity-preliminary.md
 analysis/design-source/
-analysis/roundtrip-negative-result.md
+analysis/negative-result.md
 
 # Upstream's Hardhat quickstart. Tenure does not use it, and it carried upstream's own
 # Sepolia deployment records, which read as if they were ours. The single file we need
