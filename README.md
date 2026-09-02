@@ -1,7 +1,7 @@
 # Tenure
 
-**A Uniswap v4 hook where every address pays the same fee, and proven trading history decides how
-much of the book you can take in a single transaction.**
+**A submission to the fair flow frontier: a Uniswap v4 hook where every address pays the same fee,
+and proven trading history decides how much of the book you can take in a single transaction.**
 
 Standing is an asset the trader holds, not a property the pool assigns. You are not sorted into a
 bracket. You present a credential you earned.
@@ -28,7 +28,7 @@ through.
 | [What this claims, and what it does not](#what-this-claims-and-what-it-does-not) | the honesty section |
 | [Impact](#impact-measured-on-15804-real-mainnet-swaps) | measured on real mainnet traffic |
 | [Limitations](#limitations) | every one we know of |
-| [Partner integrations](#partner-integrations) | Brevis and Uniswap v4, with file pointers |
+| [Partner integrations](#partner-integrations) | Brevis, what works, with file pointers |
 | [Documentation map](#documentation-map) | where everything else lives |
 | [Running the tests](#running-the-tests) | suites, pins, attribution |
 
@@ -203,7 +203,7 @@ Every one we know of, stated here rather than left to be found.
 
 | Limitation | Detail |
 |---|---|
-| **No proof has landed on chain** | The circuit proves standing and the proof verifies against its verifying key, but delivery did not complete, so standing in the app is operator-written. [Record](analysis/brevis-gateway-diagnosis.md). |
+| **No proof has landed on chain** | Every step we own works: the circuit proves standing, the proof verifies against its verifying key, the gateway accepts the query, and the fee is paid on Sepolia. Brevis then never submitted the aggregated proof, so the callback never fired and standing in the app is operator-written. Measured at 47 minutes against a documented 2. [Record](analysis/brevis-gateway-diagnosis.md). |
 | **Proof fixtures use a historical block range** | `brevis-sdk v0.3.12` could not build receipt proofs for blocks containing EIP-7702 transactions, so the fixtures are cut from a pinned pre-Pectra range anchored at block 21,146,236. v0.3.33 pins a go-ethereum fork that does parse type 4, so the constraint is probably lifted, but the fixtures were never re-cut and we do not claim it is fixed. [Detail](analysis/pinned-proving-range.md). |
 | **Cross-transaction splitting still evades the cap** | Transient storage is transaction-scoped, so it clears between transactions. This costs gas and gives up atomicity. |
 | **Router-batched unsigned users share one bucket** | Any of them can sign a zero-standing credential, which is free and permissionless, to isolate themselves. |
@@ -215,16 +215,49 @@ Every one we know of, stated here rather than left to be found.
 
 ## Partner integrations
 
+**Brevis is the one partner integration, and it is running code.** The circuit is written and
+compiles to 1,601,003 constraints. It proves standing from real Ethereum mainnet swap logs, and the
+proof verifies against its verifying key. The verifying-key hash is set on the deployed Sepolia
+registry, which enforces it on every callback. Two fixtures were proved and each matched a figure
+computed from the raw logs outside the circuit. What is not complete is the last leg, Brevis
+delivering the aggregated proof on chain. Detail, with transaction hashes:
+[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
+
 | Partner | Where | What it does |
 |---|---|---|
 | **Brevis** | [`brevis/prover/circuits/directional_balance.go`](brevis/prover/circuits/directional_balance.go) | the production circuit, proving directional balance from swap logs only |
 | **Brevis** | [`brevis/prover/cmd/main.go`](brevis/prover/cmd/main.go) | prover service, instantiates the production circuit |
 | **Brevis** | [`brevis/app/src/prove_standing.ts`](brevis/app/src/prove_standing.ts) | builds the proof request, proves locally, verifies the decoded output |
+| **Brevis** | [`brevis/app/src/chain_scoped_request.ts`](brevis/app/src/chain_scoped_request.ts) | scopes the query to a source chain, which the TypeScript SDK never sets |
 | **Brevis** | `src/TenureRegistry.sol:83` | `handleProofResult`, the ZK callback, with `_vkHash` validated |
 | **Brevis** | `src/lib/BrevisAppZkOnly.sol:9` | vendored `BrevisAppZkOnly` callback base |
+
+What each of those does, in order, and where the flow stops:
+
+```
+directional_balance.go   circuit over mainnet swap logs        written, 1,601,003 constraints
+prove_standing.ts        prove locally, verify against the vk   two fixtures, both match
+chain_scoped_request.ts  submit to the Brevis gateway           accepted, query key returned
+BrevisRequest.sendRequest pay for fulfilment on Sepolia         paid, tx 0xd5f1a81b, status QS_PAID
+TenureRegistry.sol:83    brevisCallback records standing        never fired
+```
+
+The registry is deployed with the verifying-key hash enforced, so it is ready for that callback.
+`expectedVkHash` starts at zero and every callback reverts until it is set, which makes an unset key
+fail closed rather than accept a proof from any circuit.
+
+### Dependencies
+
+Not partners, listed separately so the table above is not padded.
+
+| Dependency | Where | What it does |
+|---|---|---|
 | **Uniswap v4** | `src/TenureHook.sol:235` | `_beforeSwap` enforcing the depth entitlement |
 | **Uniswap v4** | `src/TenureHook.sol:136` | `getHookPermissions`, beforeSwap only, no fee power |
 | **OpenZeppelin** | `src/TenureHook.sol:37` | `uniswap-hooks` v1.0.0 `BaseHook` |
+
+Uniswap v4 is the base protocol this is built on rather than an integration, and OpenZeppelin is a
+library dependency. Neither is a UHI10 sponsor.
 
 These `file:line` pointers are **machine checked** on every CI run by `scripts/check_pointers.py`,
 because `forge fmt` reflows source files and a pointer that was correct when written drifts
