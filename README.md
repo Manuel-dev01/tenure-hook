@@ -97,11 +97,34 @@ forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL
 (3) is the splitting attack and (4) is the anti-whitelist property. Those are the two properties
 most easily lost in a refactor, so they are asserted on chain rather than assumed.
 
-**What is not live.** No proof has been delivered on chain, so standing in the app is written by the
-operator registry, which is the second trust model behind the same interface. The figure it holds is
-not invented: 9,375 bps over 32 swaps is the balanced fixture's real circuit output, reproducible
-with `npm run prove -- balanced`. The app names which registry it reads, on every screen. Full
-record: [`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
+**What is not live: delivery, and only delivery.** The Brevis gateway is holding a finished, correct
+result for our paid query. It decodes through the deployed registry's own `decodeOutput`, so you can
+check it without trusting us:
+
+```bash
+cast call 0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5   "decodeOutput(bytes)(address,uint16,uint16,uint64,uint64)"   0x308c6fbd6a14881af333649f17f2fde9cd75e2a60000001d0000000001425c5c000000000142a8ad   --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+
+0x308C6fbD6a14881Af333649f17f2FdE9cd75e2a6   # trader
+0                                            # balanceBps
+29                                           # swapCount
+21126236                                     # fromBlock
+21145773                                     # toBlock
+```
+
+Those bytes come from the gateway's `GetQueryStatus` response for the query we paid for on Sepolia,
+and they match the one-sided fixture's hand-computed expectation exactly. The proof is generated and
+the output is correct. What has not happened is Brevis submitting the aggregated proof on chain, so
+`brevisCallback` never fired.
+
+Because delivery is outstanding, standing in the app is written by the operator registry, the second
+trust model behind the same interface. The figure it holds is not invented either: 9,375 bps over 32
+swaps is the *balanced* fixture's real circuit output, reproducible with `npm run prove -- balanced`.
+The app names which registry it reads, on every screen.
+
+If the callback ever fires it will record **0 bps for `0x308c6fbd…`**, the one-sided fixture, not
+9,375 for the balanced one. Two different fixtures, two different addresses, and the paid query is
+the one-sided one. Full record, including what this cannot show:
+[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
 
 ---
 
@@ -203,7 +226,7 @@ Every one we know of, stated here rather than left to be found.
 
 | Limitation | Detail |
 |---|---|
-| **No proof has landed on chain** | Every step we own works: the circuit proves standing, the proof verifies against its verifying key, the gateway accepts the query, and the fee is paid on Sepolia. Brevis then never submitted the aggregated proof, so the callback never fired and standing in the app is operator-written. Measured at 47 minutes against a documented 2. [Record](analysis/brevis-gateway-diagnosis.md). |
+| **No proof has landed on chain** | Every step we own works: the circuit proves standing, the proof verifies against its verifying key, the gateway accepts the query, the fee is paid on Sepolia, and the gateway holds a correct decodable result for it. Brevis never submitted the aggregated proof, so the callback never fired and standing in the app is operator-written. Measured at 11 h 24 m against a documented 2 minutes. [Record](analysis/brevis-gateway-diagnosis.md). |
 | **Proof fixtures use a historical block range** | `brevis-sdk v0.3.12` could not build receipt proofs for blocks containing EIP-7702 transactions, so the fixtures are cut from a pinned pre-Pectra range anchored at block 21,146,236. v0.3.33 pins a go-ethereum fork that does parse type 4, so the constraint is probably lifted, but the fixtures were never re-cut and we do not claim it is fixed. [Detail](analysis/pinned-proving-range.md). |
 | **Cross-transaction splitting still evades the cap** | Transient storage is transaction-scoped, so it clears between transactions. This costs gas and gives up atomicity. |
 | **Router-batched unsigned users share one bucket** | Any of them can sign a zero-standing credential, which is free and permissionless, to isolate themselves. |
@@ -238,7 +261,8 @@ What each of those does, in order, and where the flow stops:
 directional_balance.go   circuit over mainnet swap logs        written, 1,601,003 constraints
 prove_standing.ts        prove locally, verify against the vk   two fixtures, both match
 chain_scoped_request.ts  submit to the Brevis gateway           accepted, query key returned
-BrevisRequest.sendRequest pay for fulfilment on Sepolia         paid, tx 0xd5f1a81b, status QS_PAID
+BrevisRequest.sendRequest pay for fulfilment on Sepolia         paid, tx 0xd5f1a81b, fee 0
+Brevis gateway            hold the finished result               QS_PAID, output correct and decodable
 TenureRegistry.sol:83    brevisCallback records standing        never fired
 ```
 
