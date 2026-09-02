@@ -53,7 +53,7 @@ chain 1
 
 Brevis rotated these values and stopped hard-coding them: from v0.3.17 the SDK fetches them from
 the gateway while building circuit input (`sdk/app.go`, `GetCircuitDummyInput`). Their docs state
-the minimum plainly — *"Please make sure SDK version is no less than 0.3.17. It is not
+the minimum plainly, *"Please make sure SDK version is no less than 0.3.17. It is not
 backward-compatible."* We were on **0.3.12**, five releases below a documented floor.
 
 **The whole failure was a stale dependency pin.** The gateway was telling us the exact value it
@@ -75,13 +75,13 @@ Four things had to change. Nothing in the circuit, the hook or any contract.
 | what | detail |
 |---|---|
 | `go.mod` require | `brevis-sdk v0.3.12` becomes `v0.3.33` |
-| `go.mod` replace | v0.3.33 pins `gnark => brevis-network/gnark v0.1.0` and `go-ethereum => celer-network/go-ethereum v0.0.0-20250328211401`. **A replace directive in a dependency is ignored by the go tool** — only the main module's replaces apply — so both must be restated in `brevis/prover/go.mod`. |
+| `go.mod` replace | v0.3.33 pins `gnark => brevis-network/gnark v0.1.0` and `go-ethereum => celer-network/go-ethereum v0.0.0-20250328211401`. **A replace directive in a dependency is ignored by the go tool**. Only the main module's replaces apply, so both must be restated in `brevis/prover/go.mod`. |
 | prover API | `NewService` takes a third argument, `prover.SourceChainConfigs`; the source RPC moved out of `ServiceConfig`. `Serve` now takes `(host, grpcPort, restPort)`. |
 | TS request | `ProofRequest.build()` in brevis-sdk-typescript 1.3.1 never sets `src_chain_id`. Harmless under v0.3.12, fatal under v0.3.33, which keys provers by chain and rejects 0 with `unsupported chain ID: 0`. Fixed by `src/chain_scoped_request.ts`, which overrides `build()`. |
 
 The TypeScript SDK is stuck at **1.3.1** (Nov 2024) and has not tracked the Go SDK. It is still
 usable: `PrepareQueryRequest` and `AppCircuitInfo` were diffed field-by-field between v0.3.12 and
-v0.3.33 and are **identical** — the two fields v0.3.33 adds (`use_vm`, `vm_app_circuit_info`) are
+v0.3.33 and are **identical**. The two fields v0.3.33 adds (`use_vm`, `vm_app_circuit_info`) are
 optional and irrelevant to a non-VM app circuit. The corrected values ride in the prover's
 `circuit_info`, which the TS client passes through untouched. So the Go-side bump is sufficient.
 
@@ -126,7 +126,7 @@ Reproduce with `npm run gateway` (destination Arbitrum) or `npm run gateway -- 1
 
 **Precision about what this does and does not show.** `PrepareQuery` accepting a query proves the
 gateway will route this circuit. It does **not** prove Brevis will fulfil it on a given destination
-chain — fulfilment happens after the fee is paid on-chain. Both 42161 and 11155111 are accepted at
+chain, fulfilment happens after the fee is paid on-chain. Both 42161 and 11155111 are accepted at
 this stage, which is evidence about routing only.
 
 ---
@@ -141,23 +141,23 @@ Not done. It requires an on-chain transaction, so it is a deploy decision rather
 |---|---|---|
 | BrevisRequest | `0x91540fe35a245ba83459f6410c86f1aec309b290` | `0xa082F86d9d1660C29cf3f962A31d7D20E367154F` |
 | contract live | yes (`brevisProof()` returns `0x0fEc0b24…`) | yes (`brevisProof()` returns `0x70cFEb37…`) |
-| in current docs | **yes** — the one listed supported pair, mainnet to Arbitrum | no; Sepolia appears only on the legacy page, against the older appsdkv2 gateway |
+| in current docs | **yes**, the one listed supported pair, mainnet to Arbitrum | no; Sepolia appears only on the legacy page, against the older appsdkv2 gateway |
 | costs | real ETH | testnet ETH |
 
 Both contracts are deployed and answer calls; their bytecode prefixes match. **Sepolia is therefore
 worth attempting first: it is free, and failure costs nothing but time.** Its risk is that Brevis
 may no longer run fulfilment workers for it, in which case the query is accepted, paid and never
-fulfilled — which is itself a clean, publishable result.
+fulfilled, which is itself a clean, publishable result.
 
 ### Exact sequence
 
 1. Deploy `TenureRegistry(brevisRequest, operator)` with the BrevisRequest address for the chosen
-   chain. The constructor already takes it — `src/TenureRegistry.sol:67`.
+   chain. The constructor already takes it (`src/TenureRegistry.sol:67`).
 2. `setVkHash(0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8)`.
    **Not optional.** `expectedVkHash` starts at zero and every callback reverts until it is set;
    setting it wrong is worse than not deploying, because it would accept proofs from another
    circuit. This is the published audit finding the registry's natspec cites.
-3. `npm run gateway -- <chainId>` and keep the `queryKey` — it is `(proofId, nonce)`.
+3. `npm run gateway -- <chainId>` and keep the `queryKey`, which is `(proofId, nonce)`.
 4. Call `sendRequest` on BrevisRequest, paying the quoted fee as `msg.value`. Signature verified
    from the SDK's own generated bindings (`brevis-sdk@v0.3.33/sdk/eth/bindings.go:16092`):
 
@@ -175,13 +175,13 @@ fulfilled — which is itself a clean, publishable result.
 
 Success is a `StandingRecorded` event carrying 9375 bps for the balanced fixture's address.
 
-### The fee is genuinely zero — settled, not assumed
+### The fee is genuinely zero, settled, not assumed
 
 The gateway quotes `fee` as a base-10 **string**, which the SDK parses into the `msg.value` for
 `sendRequest` (`sdk/app.go:642`). That left two readings of an earlier `fee: 0` print: a real quote
 of zero, or an unset proto field rendering as zero.
 
-`npm run gateway` now prints the raw value and its type. The gateway returns `"0"` — a populated
+`npm run gateway` now prints the raw value and its type. The gateway returns `"0"`, a populated
 string. An unset field would be `""`, and `new(big.Int).SetString("", 10)` fails, which is why the
 SDK errors with `cannot parse fee value of` rather than defaulting. So `sendRequest` needs **no
 `msg.value`**; only gas.
@@ -198,7 +198,7 @@ Live, verified by reading the chain rather than trusting the deploy log:
 | `brevisRequest()` | `0xa082F86d9d1660C29cf3f962A31d7D20E367154F` |
 | deploy cost | ~0.0068 ETH at 2.1 gwei |
 
-The hook address ends **`0080`** — `BEFORE_SWAP_FLAG` and nothing else. The fee-parity property is
+The hook address ends **`0080`**, `BEFORE_SWAP_FLAG` and nothing else. The fee-parity property is
 enforced by the deployed address itself, not by the code inside it.
 
 Payment: tx `0xd5f1a81ba9a7277525dd79ec353d30ea06248fdbcbda946f56826b6ae406fb47`, status 1,
@@ -231,7 +231,7 @@ implementation fault was checked against the source rather than argued about:
 | Wrong call order (pay before submitting the proof) | **No.** The SDK's own example is PrepareRequest -> SubmitProof -> sendRequest. That is our order. |
 | Wrong `option` value | **No.** `QueryOption_ZK_MODE = 0` in gwproto; we pass 0. |
 | `use_callback` not set | **No.** Both `buildAppCircuitInfo` (app.go) and `buildFullAppCircuitInfo` (prover/utils.go:57) hard-code `UseCallback: true`, and the prover's value is what we forward. |
-| Wrong callback target, nonce, or fee | **No** — and this one is proven by Brevis, not by us. See the state machine below. |
+| Wrong callback target, nonce, or fee | **No**, and this one is proven by Brevis, not by us. See the state machine below. |
 
 #### The state machine locates the failure exactly
 
@@ -241,7 +241,7 @@ QS_TO_BE_PAID(1) -> QS_PAID(2) -> QS_PROOF_READY(3) -> QS_COMPLETE(4)
 ```
 
 Reaching `QS_PAID` is the load-bearing fact. It means **Brevis matched our on-chain `sendRequest`
-to our query** — so the proofId, nonce, callback target, callback gas and fee we submitted were all
+to our query**, so the proofId, nonce, callback target, callback gas and fee we submitted were all
 correct, verified by the counterparty rather than asserted by us. The step that never ran is
 `QS_PROOF_READY`, which is Brevis generating the final aggregated proof. That is their pipeline.
 
@@ -251,7 +251,7 @@ Measured with `cast logs`, with a control to prove the query method works:
 
 | contract | window | events |
 |---|---|---|
-| BrevisRequest, Sepolia | last 50,000 blocks (~7 days) | **1** — ours |
+| BrevisRequest, Sepolia | last 50,000 blocks (~7 days) | **1**, ours |
 | BrevisRequest, Arbitrum One | last 5,000,000 blocks (~14 days) | **0** |
 | BrevisProof, Arbitrum One | last 1,000,000 blocks | **0** |
 | *control:* WETH, Arbitrum | last 2,000 blocks | 2,050 |
@@ -271,7 +271,7 @@ repo would alter that.** Every step we own is verified working.
 
 This is **not** a fault in our contracts: the registry is configured, the callback target is
 correct, the vk hash matches, and the output is ready and correct. It is the legacy-deployment risk
-named above, now observed rather than predicted — Sepolia is on Brevis' legacy page.
+named above, now observed rather than predicted. Sepolia is on Brevis' legacy page.
 
 **The limit of what this shows.** 47 minutes of silence does not prove fulfilment workers are off;
 a badly backed-up queue looks identical from outside. The claim is bounded by what was measured:
@@ -294,7 +294,7 @@ fee-neutrality confirmed in the mined address bits
 Estimated total gas 3,210,494  ->  ~0.0072 ETH at 2.2 gwei
 ```
 
-The mined hook address ends `0080` — `BEFORE_SWAP_FLAG` and nothing else, so the deployed hook is
+The mined hook address ends `0080`, `BEFORE_SWAP_FLAG` and nothing else, so the deployed hook is
 structurally incapable of touching execution economics. Addresses above are simulation output and
 will differ on a real broadcast, since the deployer address feeds CREATE2 mining.
 
@@ -302,5 +302,5 @@ will differ on a real broadcast, since the deployer address feeds CREATE2 mining
 
 **No proof has landed on any chain.** The gateway accepts and prices the query; the paid
 `sendRequest` leg and the `brevisCallback` it triggers have not been run. Until a
-`StandingRecorded` event exists on a real chain, the claim is *"the gateway accepts our proofs"* —
+`StandingRecorded` event exists on a real chain, the claim is *"the gateway accepts our proofs"*, 
 not *"the ZK path is live end to end"*.

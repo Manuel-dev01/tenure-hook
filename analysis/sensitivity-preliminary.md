@@ -1,14 +1,14 @@
 > **SUPERSEDED by `analysis/sensitivity.md`.**
-> Kept as a record: it is where the S4 trap — picking the window that flatters the result —
+> Kept as a record: it is where the S4 trap, picking the window that flatters the result, 
 > was named *before* it could be walked into. The final table, and the N = 20 sample rule
 > that removes the fragility, are in `sensitivity.md`. Do not cite the numbers here as current.
 
-# Lookback sensitivity — preliminary, Stage 2
+# Lookback sensitivity, preliminary, Stage 2
 
 Captured during Stage 2. The full table is a Stage 4 deliverable; these are the first real numbers
 and they carry a finding that matters more than the table will.
 
-Produced **by the circuit**, not computed alongside it — `TestS5_LookbackSensitivity` in
+Produced **by the circuit**, not computed alongside it, `TestS5_LookbackSensitivity` in
 `brevis/prover/circuits/directional_balance_s5_test.go`.
 
 Address `0x51c72848c68a965f66fa7a88855f9f7784502a7f`, USDC/WETH 0.05% pool.
@@ -22,7 +22,7 @@ Address `0x51c72848c68a965f66fa7a88855f9f7784502a7f`, USDC/WETH 0.05% pool.
 ## The finding
 
 **The same address scores 0, then 10,000, then 7,777 as the window widens.** The judge's predicted
-attack — *"change the lookback and the same address flips"* — is not hypothetical. It lands, hard,
+attack, *"change the lookback and the same address flips"*, is not hypothetical. It lands, hard,
 at short windows.
 
 ## Why, and what it is not
@@ -33,7 +33,7 @@ swaps, all one direction; a single additional swap the other way would move it f
 
 It is specifically **not** evidence that directional balance is the wrong claim. Adverse-selection
 scoring would have the same small-sample problem *plus* a price series, a post-trade window, and a
-threshold — three more free parameters, each of which would need defending.
+threshold. Three more free parameters, each of which would need defending.
 
 ## The S4 trap this creates, named before it is walked into
 
@@ -57,7 +57,7 @@ and **not** by picking whichever looks best:
 
 - have the registry record `(balance, total, window)` and let the hook's depth mapping account for
   sample size, or
-- require a minimum observed swap count for standing to be recorded at all — defensible as a
+- require a minimum observed swap count for standing to be recorded at all, defensible as a
   *validity condition* rather than a discriminator, but it is a constant and must be argued for
   openly, not slipped in.
 

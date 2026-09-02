@@ -14,7 +14,7 @@ import (
 //	 balanced between the two directions."
 //
 // We do NOT claim to detect toxicity, adverse selection, or intent. Adverse-selection scoring was
-// considered and rejected — it infers intent from subsequent price movement, which is the same
+// considered and rejected. It infers intent from subsequent price movement, which is the same
 // mistake that killed the predecessor project (inferring an operation from a state prefix), and it
 // needs a threshold on a continuous modelled score, which the anti-goal blacklist forbids.
 // See analysis/circuit-claim-decision.md.
@@ -51,8 +51,8 @@ func (c *DirectionalBalanceCircuit) Allocate() (maxReceipts, maxStorage, maxTran
 //
 // Each receipt supplies two fields from one Uniswap Swap log:
 //
-//	Field 0 — the address the swap is attributed to, read from an indexed topic.
-//	Field 1 — amount0, signed. Its sign is the swap's direction.
+//	Field 0, the address the swap is attributed to, read from an indexed topic.
+//	Field 1, amount0, signed. Its sign is the swap's direction.
 //
 // Both fields are asserted to come from the same log position, so the direction cannot be taken
 // from one swap and the address from another.
@@ -113,7 +113,7 @@ func (c *DirectionalBalanceCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput
 	// This is a ratio of counts, deliberately not of volume: Brevis treats volume metrics as
 	// ineligible, and counts are also harder to distort with a single large trade.
 	//
-	// Continuous and monotonic. There is no threshold here and none may be added — the
+	// Continuous and monotonic. There is no threshold here and none may be added, the
 	// balance-to-depth mapping lives in the hook (src/TenureHook.sol:172), not in this circuit.
 	buysLessThanSells := api.Uint248.IsLessThan(buys, sells)
 	minSide := api.Uint248.Select(buysLessThanSells, buys, sells)

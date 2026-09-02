@@ -7,7 +7,7 @@ pragma solidity ^0.8.26;
 ///
 /// @dev DEMONSTRATION ONLY. This exists so the hook has a pool to guard on a testnet. It is not
 ///      part of the mechanism, carries no value, and nothing in `TenureHook`, `TenureRegistry` or
-///      the circuit depends on it. Deliberately not named `TestToken` — `scripts/gate.sh` greps
+///      the circuit depends on it. Deliberately not named `TestToken`: `scripts/gate.sh` greps
 ///      `src/` filenames for out-of-scope module names, and this project does not ship a token.
 ///
 /// @dev The faucet is unguarded on purpose. Rate-limiting it would add state and a failure mode to

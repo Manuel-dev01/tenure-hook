@@ -33,7 +33,7 @@ Everything else under `brevis/` remains upstream's, unmodified.
 
 ---
 
-## RPC endpoints — which one serves which purpose, and why
+## RPC endpoints, which one serves which purpose, and why
 
 `prover/cmd/main.go` has been changed twice for two *different* reasons. Recording both so the
 endpoint is not "corrected" back by someone who remembers only one of them.
@@ -41,7 +41,7 @@ endpoint is not "corrected" back by someone who remembers only one of them.
 | endpoint | verdict |
 |---|---|
 | `https://eth.llamarpc.com` | **upstream default. Do not restore.** Returned Cloudflare **521** and aborted prover startup *after* a successful setup. The error names its own `zone` as `eth.llamarpc.com`, which reads exactly like a Brevis outage and is not one. |
-| `https://ethereum-rpc.publicnode.com` | fixed the 521, and is fine for **recent** blocks. **Not archive-capable** — answers `cannot get mpt key ... not found` for the pinned historical range. |
+| `https://ethereum-rpc.publicnode.com` | fixed the 521, and is fine for **recent** blocks. **Not archive-capable**, answers `cannot get mpt key ... not found` for the pinned historical range. |
 | `https://eth.drpc.org` | **current setting.** Archive-capable; serves receipts and MPT keys for the pinned pre-Pectra range. |
 
 The trap: the publicnode change was *correct for the 521* and *wrong for historical proving*. A fix
@@ -49,14 +49,14 @@ being right for one bug and wrong for a later use is precisely what gets redisco
 The proving range is historical by necessity (EIP-7702, see `analysis/pinned-proving-range.md`), so
 **the prover's RPC must be archive-capable.**
 
-## SDK version — ours, and why it is not upstream's default
+## SDK version, ours, and why it is not upstream's default
 
 The quickstart template ships `brevis-sdk v0.3.12`. We run **v0.3.33**, and restate its `replace`
 directives (`gnark => brevis-network/gnark v0.1.0`, `go-ethereum => celer-network/go-ethereum`) in
 `prover/go.mod`, because a replace in a dependency's go.mod is ignored by the go tool.
 
-This is not a gratuitous bump. Brevis document 0.3.17 as the minimum supported version — *"It is not
-backward-compatible"* — and below it the gateway rejects every query, because older SDKs hard-code
+This is not a gratuitous bump. Brevis document 0.3.17 as the minimum supported version, *"It is not
+backward-compatible"*, and below it the gateway rejects every query, because older SDKs hard-code
 per-chain dummy input commitments that Brevis has since rotated. The full trace is in
 `analysis/brevis-gateway-diagnosis.md`.
 

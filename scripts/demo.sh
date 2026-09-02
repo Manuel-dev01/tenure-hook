@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# scripts/demo.sh — exercise and demonstrate the whole product, in order.
+# scripts/demo.sh, exercise and demonstrate the whole product, in order.
 #
 #   bash scripts/demo.sh              # everything that needs no secrets
 #   bash scripts/demo.sh --offline    # skip anything touching the network
 #   bash scripts/demo.sh --with-proof # also generate a real ZK proof (needs the prover running)
+#
+# Narrative walkthrough, troubleshooting and the browser flow: DEMO.md
 #
 # WHAT THIS IS FOR. Two audiences, one script. A judge runs it to check the claims without
 # trusting us; we run it before recording so the demo is rehearsed rather than debugged on camera.
@@ -56,11 +58,11 @@ sk()   { printf '  \033[33mSKIP\033[0m  %s\n' "$1"; skip=$((skip+1)); }
 stage "0 · Preflight"
 
 command -v forge >/dev/null 2>&1 && ok "$(forge --version 2>/dev/null | head -1)" \
-                                 || { no "forge not found — install Foundry"; }
+                                 || { no "forge not found, install Foundry"; }
 if [ -f lib/v4-core/src/interfaces/IPoolManager.sol ]; then
   ok "submodules present"
 else
-  no "lib/ is empty — run: git submodule update --init --recursive"
+  no "lib/ is empty, run: git submodule update --init --recursive"
 fi
 command -v go >/dev/null 2>&1 && ok "go $(go version | awk '{print $3}' | sed 's/^go//')" || sk "go not on PATH (stage 2 circuit tests)"
 
@@ -84,7 +86,7 @@ else
   no "forge test --isolate (see $TMP/demo_test.log)"
 fi
 if grep -qE '[1-9][0-9]* skipped' "$TMP/demo_test.log" 2>/dev/null; then
-  no "tests were skipped — a skip is not a pass"
+  no "tests were skipped, a skip is not a pass"
 else
   ok "no skipped tests"
 fi
@@ -93,19 +95,19 @@ if command -v go >/dev/null 2>&1; then
   # The S5 test proves the circuit computes 2*min(buys,sells)/total, checked against a figure
   # computed outside the circuit. Mutating min->max turns it red naming the cause.
   if ( cd brevis/prover && TMPDIR= TMP= TEMP= go test ./... ) >"$TMP/demo_gotest.log" 2>&1; then
-    ok "go test ./... — circuit arithmetic verified"
+    ok "go test ./..., circuit arithmetic verified"
   else
     no "go test ./... (see $TMP/demo_gotest.log)"
   fi
 else
-  sk "circuit arithmetic — go not on PATH"
+  sk "circuit arithmetic, go not on PATH"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 stage "3 · The claim gate"
 
 if bash scripts/gate.sh >"$TMP/demo_gate.log" 2>&1; then
-  ok "GATE PASS — fee parity, identity soundness, scope, README pointers"
+  ok "GATE PASS, fee parity, identity soundness, scope, README pointers"
 else
   no "GATE FAIL (see $TMP/demo_gate.log)"
   grep -E "FAIL:" "$TMP/demo_gate.log" | sed 's/^/        /'
@@ -131,10 +133,10 @@ if [ "$WITH_PROOF" -eq 1 ]; then
     sk "proving needs the network"
   elif ! nc -z localhost 33247 2>/dev/null && ! (command -v powershell.exe >/dev/null 2>&1 &&
         powershell.exe -NoProfile -Command "(Test-NetConnection -ComputerName localhost -Port 33247 -InformationLevel Quiet)" 2>/dev/null | grep -qi true); then
-    sk "prover not listening on :33247 — start it with: cd brevis/prover && go run ./cmd/main.go"
+    sk "prover not listening on :33247, start it with: cd brevis/prover && go run ./cmd/main.go"
   else
     echo "  Proving takes 57-176s. The expected figure is computed from raw logs, NOT by the circuit,"
-    echo "  and the script exits non-zero on mismatch — so this is a check, not a printout."
+    echo "  and the script exits non-zero on mismatch, so this is a check, not a printout."
     if ( cd brevis/app && npm run prove -- balanced ) 2>&1 | tail -14 | sed 's/^/  /'; then
       ok "balanced fixture proved and matched (9375 bps over 32 swaps)"
     else
@@ -142,14 +144,14 @@ if [ "$WITH_PROOF" -eq 1 ]; then
     fi
   fi
 else
-  sk "ZK proof — pass --with-proof (needs the prover on :33247, ~2 min)"
+  sk "ZK proof, pass --with-proof (needs the prover on :33247, ~2 min)"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 stage "6 · The deployed contracts on Sepolia"
 
 if [ "$OFFLINE" -eq 1 ]; then
-  sk "on-chain reads — --offline"
+  sk "on-chain reads, --offline"
 else
   cfg_reg=$(cast call "$HOOK" 'registry()(address)' --rpc-url "$RPC" 2>/dev/null)
   if [ "${cfg_reg,,}" = "${REGISTRY,,}" ]; then
@@ -160,12 +162,12 @@ else
 
   tranche=$(cast call "$HOOK" 'depthTranche(bytes32)(uint256)' "$POOL_ID" --rpc-url "$RPC" 2>/dev/null | awk '{print $1}')
   [ -n "$tranche" ] && [ "$tranche" != "0" ] && ok "pool tranche configured: $tranche" \
-                                             || no "pool tranche unset — the hook would not enforce"
+                                             || no "pool tranche unset, the hook would not enforce"
 
   # The address bits ARE the fee-parity guarantee: no BEFORE_SWAP_RETURNS_DELTA means the hook
   # cannot alter execution economics whatever its code says.
   case "${HOOK,,}" in
-    *0080) ok "hook address ends 0080 — beforeSwap only, no return-delta permission" ;;
+    *0080) ok "hook address ends 0080, beforeSwap only, no return-delta permission" ;;
     *)     no "hook address does not encode beforeSwap-only permissions" ;;
   esac
 
@@ -195,19 +197,24 @@ fi
 stage "7 · The front end"
 
 if [ "$OFFLINE" -eq 1 ]; then
-  sk "site checks — --offline"
+  sk "site checks, --offline"
 elif ! command -v curl >/dev/null 2>&1; then
-  sk "site checks — curl not found"
+  sk "site checks, curl not found"
 else
   for path in "" "app.html" "deployments.json"; do
     code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$path" 2>/dev/null)
     [ "$code" = "200" ] && ok "$SITE/$path" || no "$SITE/$path returned $code"
   done
   # The banner is the honesty guarantee: standing is operator-written, not ZK-delivered.
-  if curl -s "$SITE/app.html" 2>/dev/null | grep -q "operator-written"; then
+  #
+  # Fetch to a variable rather than piping into `grep -q`. Under `set -o pipefail`, grep -q exits on
+  # the first match and closes the pipe, curl dies of SIGPIPE, and the PIPELINE reports failure even
+  # though the string was found. That produced a false "missing disclosure" failure once already.
+  body=$(curl -s "$SITE/app.html" 2>/dev/null)
+  if printf '%s' "$body" | grep -q "operator-written"; then
     ok "app discloses that standing is operator-written, not ZK-delivered"
   else
-    no "app is missing the trust-model disclosure — do not demo it in this state"
+    no "app is missing the trust-model disclosure, do not demo it in this state"
   fi
 fi
 
@@ -223,11 +230,11 @@ cat <<'SUMMARY'
 What was just demonstrated, in one line each:
 
   · every address pays the same fee, and the hook's mined address makes that structural
-  · standing comes from a ZK circuit over real mainnet swap logs — no price, no oracle
+  · standing comes from a ZK circuit over real mainnet swap logs, no price, no oracle
   · depth scales from 5% to 100% of a tranche, continuously, with no cliffs
   · the cap binds on a live public testnet, matched by the hook's own error selectors
   · splitting one large take into several capped legs reverts
-  · an unsigned swap still executes, at base depth — nobody is excluded
+  · an unsigned swap still executes, at base depth, nobody is excluded
 
 Not claimed: no proof has landed on any chain. Our query was accepted, priced
 and paid on Sepolia and reached QS_PAID; no callback arrived in the 47 minutes

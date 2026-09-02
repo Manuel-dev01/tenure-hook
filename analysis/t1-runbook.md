@@ -1,6 +1,6 @@
-# T1 runbook — Brevis round-trip
+# T1 runbook. Brevis round-trip
 
-**Updated 2026-08-30. T1a PASSED — this runbook is now largely a record, not a to-do list.**
+**Updated 2026-08-30. T1a PASSED. This runbook is now largely a record, not a to-do list.**
 
 The 3 GiB trusted setup is downloaded and verified, keys were generated in 13.6 seconds, and a proof
 was generated and verified against the vk twice. **Gateway submission also works as of 2026-09-02.**
@@ -8,7 +8,7 @@ What remains is only the on-chain callback, which needs a deployed registry and 
 
 **Important scope note:** everything below was done with the **upstream example circuit**, which is
 what closed the T1a round-trip gate. The production circuit `DirectionalBalanceCircuit` was wired
-separately on Aug 30 and has its own keys, vk hash and verified proofs — see
+separately on Aug 30 and has its own keys, vk hash and verified proofs, see
 `analysis/production-circuit-proof.md`.
 
 ---
@@ -17,31 +17,31 @@ separately on Aug 30 and has its own keys, vk hash and verified proofs — see
 
 | Item | State |
 |---|---|
-| KZG SRS ignition file | **verified** — `~/kzgsrs/kzg_srs_100800000_bn254_MAIN_IGNITION`, 3,225,600,164 bytes, md5 `2abd249241a7fe883379db93530365f8` |
+| KZG SRS ignition file | **verified**, `~/kzgsrs/kzg_srs_100800000_bn254_MAIN_IGNITION`, 3,225,600,164 bytes, md5 `2abd249241a7fe883379db93530365f8` |
 | Go module deps | downloaded |
 | `brevis/app` npm deps | installed |
 | `brevis/contracts` npm deps | installed, `npx hardhat compile` succeeds (6 contracts) |
-| Circuit (example) | compiles — 857,942 constraints |
-| **Setup / keys** | **DONE — 13.6s.** pk 67,143,336 bytes, vk 34,368 bytes, cached content-addressed |
-| **Local proof generation** | **DONE — generated and verified against the vk, twice** |
+| Circuit (example) | compiles, 857,942 constraints |
+| **Setup / keys** | **DONE, 13.6s.** pk 67,143,336 bytes, vk 34,368 bytes, cached content-addressed |
+| **Local proof generation** | **DONE, generated and verified against the vk, twice** |
 | **vk hash (example circuit)** | `0x1cb76a97800eca38048ce06ba3199638113b0218e56ed9c9b212fbedbd8a79fc` |
 
 ## Not done
 
 | Item | Blocker |
 |---|---|
-| ~~Gateway submission~~ | **DONE 2026-09-02.** The gateway accepts the query and returns a query key. The blocker was a stale `brevis-sdk v0.3.12` pin whose hard-coded dummy input commitment the gateway had rotated — *not* registration, *not* an outage, both of which were written here previously and were false. See `analysis/brevis-gateway-diagnosis.md`. |
+| ~~Gateway submission~~ | **DONE 2026-09-02.** The gateway accepts the query and returns a query key. The blocker was a stale `brevis-sdk v0.3.12` pin whose hard-coded dummy input commitment the gateway had rotated, *not* registration, *not* an outage, both of which were written here previously and were false. See `analysis/brevis-gateway-diagnosis.md`. |
 | On-chain callback | **the only step left.** Needs a deployed registry, `setVkHash`, and a funded key on the destination chain to pay `BrevisRequest.sendRequest`. |
-| ~~Production circuit setup~~ | **DONE Aug 30, re-done Sep 2 under brevis-sdk v0.3.33** — `cmd/main.go` runs `DirectionalBalanceCircuit`; vk hash is now `0x0230047e…6f94b8`. The v0.3.12 hash `0x028f783f…4e3b0b` is dead. |
+| ~~Production circuit setup~~ | **DONE Aug 30, re-done Sep 2 under brevis-sdk v0.3.33**, `cmd/main.go` runs `DirectionalBalanceCircuit`; vk hash is now `0x0230047e…6f94b8`. The v0.3.12 hash `0x028f783f…4e3b0b` is dead. |
 
 ---
 
-## The memory blocker — RESOLVED
+## The memory blocker. RESOLVED
 
 > **Resolved 2026-08-25 by a reboot.** Peak RSS was **4.78 GB**, not the 7–10 GB estimated below;
 > the estimate was high. Setup then completed in 13.6 seconds. Kept for the record because the
 > reasoning about `validateFile` and `UnsafeReadFrom` is still accurate, and because setup is
-> content-addressed — swapping in a new circuit regenerates keys but never re-downloads the SRS.
+> content-addressed, swapping in a new circuit regenerates keys but never re-downloads the SRS.
 
 ### Original analysis
 
@@ -50,13 +50,13 @@ separately on Aug 30 and has its own keys, vk hash and verified proofs — see
 1. `validateFile` reads the **entire 3 GiB into a `bytes.Buffer`** to MD5 it
    (`brevis-sdk/sdk/srs/srs.go`).
 2. `UnsafeReadFrom` parses **all 100.8M G1 points** into memory. At 32 bytes/point on disk
-   decompressing to ~64 bytes affine, that is **~6.4 GB** — estimated from the file's
+   decompressing to ~64 bytes affine, that is **~6.4 GB**, estimated from the file's
    bytes-per-point ratio, not measured.
 
 Then gnark generates proving/verifying keys for 857,948 constraints on top of that.
 
 Estimated peak **7–10 GB**. Last observed: **0.9 GB available**, 32.8 / 43.8 GB committed. It would
-not hard-fail — there is pagefile headroom — but it would thrash for hours and may hit the commit
+not hard-fail. There is pagefile headroom, but it would thrash for hours and may hit the commit
 limit.
 
 **Cheapest fix: reboot before running step 1.** Top processes are all small (~0.3 GB each), so the
@@ -89,15 +89,15 @@ That tx hash is upstream's example: a mainnet USDC transfer ≥ 500 USDC. The ci
 `(blockNum, account, volume)`. Source chain is mainnet (1), destination Sepolia (11155111).
 
 ### 3. Gateway submission
-Handled by the same script — `Prover('localhost:33247')` proves locally, then
-`Brevis('appsdkv3.brevis.network:443')` submits. **No partner key required** — Brevis document the
+Handled by the same script, `Prover('localhost:33247')` proves locally, then
+`Brevis('appsdkv3.brevis.network:443')` submits. **No partner key required**. Brevis document the
 partner key and callback address as not required, and both are empty strings in our call.
 
 Requires `brevis-sdk >= 0.3.17` on the Go side; we run **v0.3.33**. Below that floor the gateway
 rejects every query, because older SDKs hard-code per-chain dummy input commitments that Brevis has
 since rotated. `npm run gateway` re-checks this end to end.
 
-### 4. On-chain callback — NEEDS A FUNDED SEPOLIA KEY
+### 4. On-chain callback. NEEDS A FUNDED SEPOLIA KEY
 ```bash
 cd brevis/contracts
 cp .env.template .env        # then fill in PRIVATE_KEY and SEPOLIA_ENDPOINT yourself
@@ -109,7 +109,7 @@ Then, before submitting a proof with a callback address:
 - call `setVkHash(vkHash)` on the deployed contract
 
 **This is security-critical, not a formality.** `TokenTransferZkOnly.handleProofResult` does
-`require(vkHash == _vkHash, "invalid vk")`. Its `vkHash` starts at zero — leaving it unset means
+`require(vkHash == _vkHash, "invalid vk")`. Its `vkHash` starts at zero, leaving it unset means
 any proof from any circuit would be accepted. A published audit finding against this exact pattern
 records ignoring `_vkHash` as an exploitable bug.
 
@@ -120,7 +120,7 @@ records ignoring `_vkHash` as an exploitable bug.
 A `TransferAmountAttested` event is emitted on Sepolia by our deployed contract, carrying our
 circuit's output, with `vkHash` set and matching.
 
-Not before. A locally generated proof is **not** the gate — the round trip is.
+Not before. A locally generated proof is **not** the gate, the round trip is.
 
 ## Historical note
 

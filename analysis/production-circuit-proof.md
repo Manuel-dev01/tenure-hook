@@ -8,8 +8,8 @@
 > `brevis-gateway-diagnosis.md`. Both fixtures reproduce their expected figures exactly under the
 > new SDK, which is the point of re-running them rather than assuming.
 
-**2026-08-30.** The gap recorded in the roadmap — *"the ZK round trip is proven with the example
-circuit, our circuit's computation is proven by test engine, and the two have never been joined"* —
+**2026-08-30.** The gap recorded in the roadmap, *"the ZK round trip is proven with the example
+circuit, our circuit's computation is proven by test engine, and the two have never been joined"*, 
 **is closed.** They are now joined.
 
 ## What runs
@@ -48,7 +48,7 @@ Receipts are genuine Uniswap V3 `Swap` logs from the **pinned pre-Pectra range**
 Proof size 936 bytes in both cases.
 
 **The expected values were computed from raw logs, independently of the circuit.** A verifying proof
-is not evidence the circuit computed the right thing — that is the S5 rule — so
+is not evidence the circuit computed the right thing. That is the S5 rule, so
 `brevis/app/src/prove_standing.ts` compares the decoded output against the hand-derived figure and
 exits non-zero on any mismatch. The pair differing in the expected direction (9375 against 0) is
 what makes this evidence rather than one data point.
@@ -63,7 +63,7 @@ cd brevis/app    && npm run prove -- balanced
 
 ## Three things this surfaced
 
-**1. Receipt indices are mandatory.** `ProofRequest.addReceipt(data, index)` — the index looks
+**1. Receipt indices are mandatory.** `ProofRequest.addReceipt(data, index)`, the index looks
 optional in TypeScript, but the prover always pins by it (`sdk/prover/server.go:241`). Omitting it
 sends `index: 0` for every receipt and the second one panics with *"an element already pinned at
 index 0"*. Any multi-receipt proof must pass distinct indices.
@@ -80,11 +80,11 @@ is declared but **not exported**, and `setCustomInput` takes a plain object it s
 ## Honest scope
 
 This is **local proving and local verification**. Gateway submission to Sepolia remains blocked by
-the gateway declining our unregistered app circuit (measured: `invalid app circuit ... dummy input commitment`), and is not a gate — deployment is not required by
+the gateway declining our unregistered app circuit (measured: `invalid app circuit ... dummy input commitment`), and is not a gate, deployment is not required by
 the rules. What is now demonstrated is that the production circuit generates a real, verifying
 proof from real mainnet data and outputs exactly the standing figure derived independently from the
 logs.
 
 Proving takes ~100 s for 29–32 receipts at 1.58M constraints. If that ever needs reducing, the
-honest lever is the `MaxSwaps` receipt budget, not the circuit's logic — and that is a mechanism
+honest lever is the `MaxSwaps` receipt budget, not the circuit's logic, and that is a mechanism
 parameter, so it would be a disclosure rather than a change.

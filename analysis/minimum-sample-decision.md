@@ -10,17 +10,17 @@ the anti-goal blacklist forbids. This one is derived from the metric's own arith
 
 > Standing is **undefined** below N swaps. The window is whatever block range contains N.
 
-An address with fewer than N observed swaps does not get a low score — it gets **no standing**, and
+An address with fewer than N observed swaps does not get a low score. It gets **no standing**, and
 falls to base depth alongside every unsigned swapper. Nothing is excluded, nothing is penalised.
 Standing must be earned across a volume of interactions, not caught in a lucky window.
 
 ## Why this replaces fixed lookback windows
 
 Stage 2 measured the same address at 0 / 10,000 / 7,777 bps across 20 / 40 / 80-block windows. That
-is small-sample noise, and a fixed window does not fix it — it just picks which noise to show.
+is small-sample noise, and a fixed window does not fix it. It just picks which noise to show.
 
 The sample rule **removes the last free parameter**. There is no lookback to choose. What remains is
-a threshold on *evidence sufficiency* — how much data before we will say anything at all — which is
+a threshold on *evidence sufficiency*, how much data before we will say anything at all, which is
 categorically different from a threshold on the metric. It does not separate good traders from bad;
 it separates "measured" from "not yet measured".
 
@@ -46,7 +46,7 @@ Two independent constraints agree with it:
 
 - The circuit's `MaxSwaps` budget is 32, so N must fit inside a single proof. 20 leaves headroom.
 - At N = 20 the standard error of a proportion at p = 0.5 is ≈ 0.11, so the figure is meaningful to
-  roughly the nearest 1,000 bps — which is the resolution the depth curve actually needs, since
+  roughly the nearest 1,000 bps, which is the resolution the depth curve actually needs, since
   depth moves continuously and small differences do not produce cliffs.
 
 If N had come out at 4 or at 400 this document would say so. The derivation is stated so it can be

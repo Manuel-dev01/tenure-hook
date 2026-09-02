@@ -16,7 +16,7 @@ import {CurrencySettler} from "v4-core/test/utils/CurrencySettler.sol";
 ///
 /// @dev WHY NOT `PoolSwapTest` OR `CompositeRouter`. `PoolSwapTest` opens its own `unlock` per
 ///      swap and fully settles before returning, so a multi-leg route collapses into several
-///      independent transactions and the per-transaction depth meter would never bind — the
+///      independent transactions and the per-transaction depth meter would never bind, the
 ///      splitting demonstration would silently prove nothing. `CompositeRouter` (test/routers) does
 ///      hold one unlock across legs, but it `take`s and `settle`s against `address(this)`, which is
 ///      correct for a test contract holding its own balances and wrong for a user-facing router.
@@ -77,7 +77,7 @@ contract TenureSwapRouter is IUnlockCallback {
     /// @notice Provide liquidity to `key`, settling against the caller.
     /// @dev Present so the demonstration pool can be seeded through the same contract the app
     ///      already talks to, rather than deploying a second router for one call. It is ordinary
-    ///      position management and touches nothing the hook reads — `TenureHook` implements
+    ///      position management and touches nothing the hook reads, `TenureHook` implements
     ///      `beforeSwap` only, so no `hookData` is forwarded here.
     /// @param key The pool.
     /// @param tickLower Lower tick of the position.

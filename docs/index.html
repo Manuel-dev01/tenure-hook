@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tenure — same fee, earned depth</title>
+<title>Tenure: same fee, earned depth</title>
 <meta name="description" content="A Uniswap v4 hook where every address pays the same fee and proven history determines how much of the book you can take in one transaction.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,7 @@
   body { margin:0; background:oklch(0.94 0.014 82); overflow-x:hidden; }
   a { color:oklch(0.2 0.012 60); text-decoration:none; }
   a:hover { color:oklch(0.55 0.14 48); }
-  /* The design source used style-hover="..." — that is Claude Design syntax, not CSS. */
+  /* The design source used style-hover="...", which is Claude Design syntax, not CSS. */
   .btn-solid { background:oklch(0.2 0.012 60); color:oklch(0.94 0.014 82); }
   .btn-solid:hover { background:oklch(0.55 0.14 48); color:oklch(0.94 0.014 82); }
   .btn-ghost { border:1px solid oklch(0.2 0.012 60); }
@@ -65,7 +65,7 @@
       </div>
       <div style="padding:12px 4vw 0; font-size:12.5px; line-height:1.6; color:oklch(0.44 0.014 68); max-width:66ch;">
         17 buys, 15 sells across 32 real mainnet swaps: 2&nbsp;&times;&nbsp;min(buys,&nbsp;sells)&nbsp;&divide;&nbsp;total.
-        Proven by the circuit off-chain rather than asserted &mdash; reproduce it with
+        Proven by the circuit off-chain rather than asserted  reproduce it with
         <span class="mono" style="font-size:11.5px;">npm run prove -- balanced</span>.
       </div>
 
@@ -104,7 +104,7 @@
       </div>
       <div style="padding:36px 26px 42px; border-left:1px solid oklch(0.34 0.012 60);">
         <div class="mono" style="font-size:11px; color:oklch(0.78 0.13 55);">03</div>
-        <div style="font-size:16px; font-weight:300; margin-top:16px; line-height:1.4;">Standing is recorded in the registry.<br><span style="font-size:13px; color:oklch(0.78 0.13 55);">today: operator-written &mdash; see below</span></div>
+        <div style="font-size:16px; font-weight:300; margin-top:16px; line-height:1.4;">Standing is recorded in the registry.<br><span style="font-size:13px; color:oklch(0.78 0.13 55);">today: operator-written  see below</span></div>
       </div>
       <div style="padding:36px 26px 42px; border-left:1px solid oklch(0.34 0.012 60);">
         <div class="mono" style="font-size:11px; color:oklch(0.78 0.13 55);">04</div>
@@ -117,14 +117,16 @@
     </div>
 
     <div style="border-top:1px solid oklch(0.34 0.012 60); padding:26px 4vw; font-size:13px; line-height:1.75; color:oklch(0.8 0.012 74); max-width:90ch;">
-      <strong style="font-weight:500; color:oklch(0.94 0.014 82);">What is and is not live.</strong>
-      The hook and registry are deployed on Sepolia, and the circuit proves standing locally, verified
-      against its verifying key. The on-chain delivery is the part that did not complete: our first
-      failure was <em style="font-style:normal; color:oklch(0.94 0.014 82);">our own</em> stale SDK pin,
-      five releases below Brevis&rsquo; documented minimum. With that fixed the gateway accepts and prices
-      our query, we paid the fee on Sepolia, and it reached <span class="mono">QS_PAID</span> &mdash; then
-      no callback arrived in the 47 minutes we watched. So no proof has landed on any chain, and standing
-      here is written by the operator registry, the second trust model behind the same interface.
+      <strong style="font-weight:500; color:oklch(0.94 0.014 82);">What is live.</strong>
+      The hook, the router and the pool are deployed on Sepolia, and the app swaps against them. The
+      circuit proves standing from real mainnet swap logs, and the proof verifies against its
+      verifying key.
+      <br><br>
+      <strong style="font-weight:500; color:oklch(0.94 0.014 82);">What is not.</strong>
+      No proof has been delivered on chain. Standing here is written by the operator registry, which
+      is the second trust model behind the same interface. The
+      <a href="https://github.com/Manuel-dev01/tenure-hook/blob/main/analysis/brevis-gateway-diagnosis.md" style="color:oklch(0.78 0.13 55); text-decoration:underline;">full record</a>
+      is in the repository.
     </div>
 
     <div class="mono" style="border-top:1px solid oklch(0.34 0.012 60); padding:18px 4vw; display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:oklch(0.68 0.012 70);">

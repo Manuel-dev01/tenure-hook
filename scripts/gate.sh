@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/gate.sh — run at every stage gate. Exit 0 = proceed.
+# scripts/gate.sh, run at every stage gate. Exit 0 = proceed.
 #
 # Usage:  ./scripts/gate.sh          # infers stage from the repo
 #         STAGE=3 ./scripts/gate.sh  # force a stage
@@ -36,7 +36,7 @@ check $? "forge test --isolate green (see $TMP/gate_test.log)"
 
 # A skipped test is not a passing test. Catch silent skips.
 if grep -qE '[1-9][0-9]* skipped' "$TMP/gate_test.log" 2>/dev/null; then
-  echo "  FAIL: tests were skipped — a skip is not a pass"; fail=1
+  echo "  FAIL: tests were skipped, a skip is not a pass"; fail=1
 else
   echo "  ok:   no skipped tests"
 fi
@@ -55,7 +55,7 @@ if [ "$STAGE" -ge 2 ]; then
     ( cd brevis/prover && TMPDIR= TMP= TEMP= go test ./... ) >"$GATE_LOG_DIR/gate_gotest.log" 2>&1
     check $? "go test ./... green in brevis/prover (see $TMP/gate_gotest.log)"
   else
-    echo "  skip: go test — go not on PATH (the S5 circuit evidence is NOT verified)"
+    echo "  skip: go test, go not on PATH (the S5 circuit evidence is NOT verified)"
   fi
 else
   skip 2 "go test (circuit evidence)"
@@ -111,7 +111,7 @@ check $? "README has file:line pointers"
 # correct when written drifts silently. This is a binary gate, so it is verified
 # rather than trusted.
 python scripts/check_pointers.py >"$TMP/gate_ptr.log" 2>&1
-check $? "README file:line pointers still resolve (see $TMP/gate_ptr.log)"
+check $? "doc file:line pointers still resolve, all documents (see $TMP/gate_ptr.log)"
 
 # setVkHash is security-critical but only exists once the registry is wired.
 # An unset vkHash accepts proofs from ANY circuit, so from stage 3 this is hard.
@@ -140,5 +140,5 @@ else
 fi
 
 echo
-if [ "$fail" -eq 0 ]; then echo "GATE PASS"; else echo "GATE FAIL — fix before proceeding"; fi
+if [ "$fail" -eq 0 ]; then echo "GATE PASS"; else echo "GATE FAIL, fix before proceeding"; fi
 exit $fail

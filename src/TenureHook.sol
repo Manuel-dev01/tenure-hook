@@ -14,13 +14,13 @@ import {IStandingRegistry} from "./interfaces/IStandingRegistry.sol";
 /// @notice Depth is the product. Every address pays the same fee; what you earn is how much of the
 ///         book you can reach in a single swap.
 ///
-/// @dev THE ENTITLEMENT. Each pool has a configured **depth tranche** — the maximum any single swap
+/// @dev THE ENTITLEMENT. Each pool has a configured **depth tranche**, the maximum any single swap
 ///      may consume. A trader's *standing* determines what fraction of that tranche they can take.
 ///      Standing is presented by the trader as an EIP-712 credential, not assigned by the pool.
 ///
 /// @dev THE FEE IS IDENTICAL FOR EVERY ADDRESS. This contract contains no fee logic and none may be
 ///      added. `beforeSwap` returns a zero fee override unconditionally, and the hook's mined
-///      address deliberately excludes `BEFORE_SWAP_RETURNS_DELTA`, so it is not merely policy —
+///      address deliberately excludes `BEFORE_SWAP_RETURNS_DELTA`, so it is not merely policy,
 ///      the permission to alter execution economics is absent from the address itself.
 ///      See the fee-parity rule: if a change makes a fee vary by address, the change is wrong.
 ///
@@ -32,7 +32,7 @@ import {IStandingRegistry} from "./interfaces/IStandingRegistry.sol";
 /// @dev WHERE STANDING COMES FROM. The hook reads `IStandingRegistry` and does not care how the
 ///      value got there. In stage 1 an operator wrote it directly; from stage 3 a Brevis ZK
 ///      callback does, with `_vkHash` validated. Because the read path is identical either way,
-///      the hook remains shippable even if proving is unavailable — the operator-written registry
+///      the hook remains shippable even if proving is unavailable, the operator-written registry
 ///      is a complete, honest fallback rather than a mock.
 contract TenureHook is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -60,7 +60,7 @@ contract TenureHook is BaseHook {
     /// @dev Namespace for the per-transaction consumed-depth accumulator. Hook-local transient
     ///      storage (EIP-1153): persists across every leg of one transaction and is cleared by the
     ///      EVM at transaction end. That lifetime was verified in this repository's Milestone 0
-    ///      work — see analysis/roundtrip-negative-result.md, Q1 — so it is a measured property
+    ///      work, see analysis/roundtrip-negative-result.md, Q1, so it is a measured property
     ///      rather than an assumed one.
     bytes32 private constant T_CONSUMED_NAMESPACE = keccak256("tenure.consumedDepth.v1");
 
@@ -91,7 +91,7 @@ contract TenureHook is BaseHook {
 
     /// @notice A trader's signed authorisation to consume depth on one pool, once.
     /// @dev Every field is load-bearing. `beforeSwap` receives the locker (router), never the
-    ///      trader, and `IMsgSender.msgSender()` is self-reported — a malicious router could
+    ///      trader, and `IMsgSender.msgSender()` is self-reported, a malicious router could
     ///      otherwise name any high-standing address. Self-reported identity is not identity.
     ///      - `locker`   binds the credential to one router so it cannot be lifted elsewhere
     ///      - `poolId`   binds it to one pool
@@ -186,7 +186,7 @@ contract TenureHook is BaseHook {
 
     /// @notice Fraction of a pool's depth tranche an address with `standing` may consume, in bps.
     /// @dev Linear from BASE_DEPTH_BPS at standing 0 to BPS at FULL_DEPTH_STANDING, then flat.
-    ///      Continuous and monotonic — no brackets, no cliffs, nothing to tune.
+    ///      Continuous and monotonic, no brackets, no cliffs, nothing to tune.
     /// @param standing The address's proven standing.
     /// @return The accessible fraction in basis points.
     function depthFractionBps(uint256 standing) public pure returns (uint256) {
@@ -225,7 +225,7 @@ contract TenureHook is BaseHook {
     // -------------------------------------------------------------------------------------
 
     /// @notice Caps the swap at the depth the trader's standing entitles them to.
-    /// @dev A swap with no credential is NOT rejected — it receives base depth. Presenting a
+    /// @dev A swap with no credential is NOT rejected. It receives base depth. Presenting a
     ///      credential is how a trader claims *more* than base, never how they gain entry.
     /// @param sender The locker (router), not the trader. Used only to bind the credential.
     /// @param key The pool being swapped through.
@@ -290,7 +290,7 @@ contract TenureHook is BaseHook {
         //
         // Unsigned swaps meter against address(0). Under per-transaction scope that is safe: a
         // shared anonymous bucket can only be shared within one transaction, and one transaction
-        // has one initiator. Crucially, unsigned swaps are NOT exempt — exempting them would make
+        // has one initiator. Crucially, unsigned swaps are NOT exempt, exempting them would make
         // signing strictly worse than not signing, and the cheapest route to the whole book would
         // be to stay anonymous and split. That would run the mechanism backwards.
         uint256 consumed = _consumedDepth(trader);

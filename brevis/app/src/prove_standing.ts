@@ -62,9 +62,9 @@ async function main() {
             new ReceiptData({
                 tx_hash: r.tx,
                 fields: [
-                    // field 0 — recipient, topics[2] of the V3 Swap event
+                    // field 0, recipient, topics[2] of the V3 Swap event
                     new Field({ log_pos: r.logPos, is_topic: true, field_index: 2 }),
-                    // field 1 — amount0, first unindexed data word; its sign is the direction
+                    // field 1, amount0, first unindexed data word; its sign is the direction
                     new Field({ log_pos: r.logPos, is_topic: false, field_index: 0 }),
                 ],
             }),
@@ -141,7 +141,7 @@ async function main() {
     if (bad) process.exit(1);
 
     console.log('');
-    console.log('OK — proof verified AND output matches the figure computed from raw logs.');
+    console.log('OK, proof verified AND output matches the figure computed from raw logs.');
 }
 
 main().catch((e) => {

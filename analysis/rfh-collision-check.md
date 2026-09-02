@@ -37,15 +37,15 @@ volatility and swap size) and `Autonomous OTC Hook` (a separate execution lane f
 
 | Project | Cohort | What it does | Relation |
 |---|---|---|---|
-| **Loyalty Points Fee Hook** | UHI3 | "discount on swap fees based on swap volume" — tags: *Dynamic Fee, Trading Rewards* | **The exact pattern we guard against, already built.** Differs from Tenure on the one axis that matters: it moves the fee. |
-| **SwapNFT** | — | mints a soulbound **tier** NFT based on price impact, then applies a **fee discount** | history → tier → fee. Also the banned pattern, and it uses the banned vocabulary. |
-| **Reputation Hook - MetaPools** | UHI2 | "giving identities to traders globally" — integrations include **Brevis** | Brevis + trader reputation has a precedent. Our ZK layer is not itself novel. |
-| KYC / allowlist gating | many | 40 hits — `kvhook`, `RWAMarket`, `DCLEX`, `Compliant DEX`, `ZK Proof-of-Compliance` | The "whitelist with extra steps" objection is a pattern judges have seen repeatedly. |
+| **Loyalty Points Fee Hook** | UHI3 | "discount on swap fees based on swap volume", tags: *Dynamic Fee, Trading Rewards* | **The exact pattern we guard against, already built.** Differs from Tenure on the one axis that matters: it moves the fee. |
+| **SwapNFT** |, | mints a soulbound **tier** NFT based on price impact, then applies a **fee discount** | history → tier → fee. Also the banned pattern, and it uses the banned vocabulary. |
+| **Reputation Hook - MetaPools** | UHI2 | "giving identities to traders globally", integrations include **Brevis** | Brevis + trader reputation has a precedent. Our ZK layer is not itself novel. |
+| KYC / allowlist gating | many | 40 hits, `kvhook`, `RWAMarket`, `DCLEX`, `Compliant DEX`, `ZK Proof-of-Compliance` | The "whitelist with extra steps" objection is a pattern judges have seen repeatedly. |
 
 ## What this changes
 
 1. **The fee-parity rule is not paranoia.** Fee-discount-on-history exists in this directory at least twice. If
-   Tenure is heard as loyalty pricing, a judge is not imagining a competitor — they are recalling a
+   Tenure is heard as loyalty pricing, a judge is not imagining a competitor. They are recalling a
    specific prior project. Leading with depth is the *only* thing separating us from
    `Loyalty Points Fee Hook` in a judge's memory, and it is not optional.
 
@@ -57,7 +57,7 @@ volatility and swap size) and `Autonomous OTC Hook` (a separate execution lane f
 
 4. **Say the non-exclusion property out loud.** With 40 KYC/allowlist projects in the directory,
    the whitelist objection arrives pre-loaded. That an address with zero standing still receives a
-   non-zero depth allowance — asserted in `test_T2_StandingChangesDepthOnly` — is the rebuttal, and
+   non-zero depth allowance, asserted in `test_T2_StandingChangesDepthOnly`, is the rebuttal, and
    it should be stated on camera, not left to be inferred.
 
 ## Verdict

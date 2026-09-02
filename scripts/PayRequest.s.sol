@@ -21,7 +21,7 @@ interface IBrevisRequest {
     function queryRequestStatus(bytes32 _proofId, uint64 _nonce) external view returns (uint8, uint8);
 }
 
-/// @title PayRequest — pay for a query the Brevis gateway has already accepted
+/// @title PayRequest, pay for a query the Brevis gateway has already accepted
 /// @notice Step 4 of the round trip. `npm run gateway` submits the proof and returns a query key;
 ///         nothing happens on-chain until that key is paid for here. Brevis then aggregates and
 ///         calls `brevisCallback` on the registry.

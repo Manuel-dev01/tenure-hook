@@ -10,13 +10,13 @@ import {TenureHook} from "../src/TenureHook.sol";
 import {TenureRegistry} from "../src/TenureRegistry.sol";
 import {IStandingRegistry} from "../src/interfaces/IStandingRegistry.sol";
 
-/// @title Deploy — TenureRegistry + CREATE2-mined TenureHook
+/// @title Deploy. TenureRegistry + CREATE2-mined TenureHook
 /// @notice Deploys the ZK-attested registry, mines a hook address encoding beforeSwap ONLY, and
 ///         sets the circuit's verifying-key hash.
 ///
 /// @dev `setVkHash` IS NOT OPTIONAL AND IS NOT CEREMONY. `TenureRegistry.expectedVkHash` starts at
 ///      zero and every callback reverts until it is set. Leaving it unset does not merely disable
-///      the registry — a misconfigured value would accept proofs from a different circuit
+///      the registry, a misconfigured value would accept proofs from a different circuit
 ///      entirely. This script sets it and then READS IT BACK, because a deploy log is not
 ///      evidence. See analysis/submission-checklist.md.
 ///

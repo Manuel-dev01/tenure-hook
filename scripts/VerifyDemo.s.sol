@@ -11,7 +11,7 @@ import {TenureHook} from "../src/TenureHook.sol";
 import {TenureSwapRouter} from "../src/TenureSwapRouter.sol";
 import {DemoERC20} from "../src/DemoERC20.sol";
 
-/// @title VerifyDemo — does the deployed cap actually bind?
+/// @title VerifyDemo: does the deployed cap actually bind?
 /// @notice Runs against the REAL deployed Sepolia contracts. Simulate it, do not broadcast:
 ///
 ///   forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL
@@ -22,14 +22,14 @@ import {DemoERC20} from "../src/DemoERC20.sol";
 ///           1. a swap inside the allowance succeeds
 ///           2. a swap over the allowance reverts with `ExceedsDepthAllowance`
 ///           3. two legs in one transaction accumulate, and the second reverts
-///              `DepthExhaustedThisTx` — the splitting attack
+///              `DepthExhaustedThisTx`. This is the splitting attack.
 ///           4. an unsigned swap still executes, at base depth
 ///
 ///         (4) is the anti-whitelist property, the one most easily lost in a refactor, so it is
 ///         asserted rather than assumed.
 ///
 /// @dev THE FAILURES ARE MATCHED BY SELECTOR, NOT BY "IT REVERTED". A swap can revert for a dozen
-///      reasons that have nothing to do with depth — a bad approval, no liquidity, a price limit —
+///      reasons that have nothing to do with depth (a bad approval, no liquidity, a price limit),
 ///      and a test that only checks `!success` would pass for any of them and prove nothing. v4
 ///      wraps hook reverts in `CustomRevert.WrappedError`, so the expected selector is searched for
 ///      inside the returndata rather than compared against its first four bytes.

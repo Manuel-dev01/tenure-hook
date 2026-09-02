@@ -2,7 +2,7 @@
 
 > **UPDATE 2026-09-02.** The SDK constraint below is probably gone: `brevis-sdk v0.3.33` pins a
 > go-ethereum fork that parses type 4 (`core/types/transaction.go`, `SetCodeTxType = 0x04`).
-> The fixtures have **not** been re-cut against a post-Pectra range, so the pinning still holds —
+> The fixtures have **not** been re-cut against a post-Pectra range, so the pinning still holds, 
 > but it is now a property of these fixtures, not a limit of the SDK. Not claimed as fixed,
 > because it has not been tested.
 
@@ -21,7 +21,7 @@ This was measured, not assumed:
 | 25,832,018 – 25,832,022 (current) | 0, 2, 3, **4** | **12** | fails |
 | 21,146,234 – 21,146,238 (pinned) | 0, 1, 2, 3 | **0** | works |
 
-**Blob transactions (type 3) are NOT the problem** — they appear in the working range too. The
+**Blob transactions (type 3) are NOT the problem**. They appear in the working range too. The
 culprit is specifically type 4, introduced by Pectra. An earlier note in this repo guessed
 "blob/7702"; the measurement narrows it to 7702 alone.
 
@@ -41,6 +41,6 @@ This is a sponsor-side limitation and gets stated plainly in the README and on c
 > Proofs are generated against a historical block range. The Brevis SDK version available during
 > the build window cannot parse EIP-7702 transactions, which appear in current mainnet blocks.
 
-Honestly disclosed this costs nothing — deployment is not required by the rules, and a judge does
+Honestly disclosed this costs nothing, deployment is not required by the rules, and a judge does
 not penalise a dependency limitation. Hidden and then noticed, it costs Functionality, which is
 graded against our own stated scope.

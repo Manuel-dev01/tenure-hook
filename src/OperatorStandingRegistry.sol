@@ -7,8 +7,8 @@ import {IStandingRegistry} from "./interfaces/IStandingRegistry.sol";
 /// @notice Standing written directly by the pool operator.
 ///
 /// @dev THIS IS A FALLBACK, NOT A MOCK. If Brevis proving is unavailable, a pool can run Tenure
-///      with the operator publishing standing it has computed off-chain. The mechanism — identical
-///      fee for everyone, depth varying with standing — is unchanged; only the *source* of the
+///      with the operator publishing standing it has computed off-chain. The mechanism, identical
+///      fee for everyone, depth varying with standing, is unchanged; only the *source* of the
 ///      standing figure is less trustless. `TenureRegistry` is the ZK-attested version and is a
 ///      drop-in replacement via `TenureHook.setRegistry`.
 ///

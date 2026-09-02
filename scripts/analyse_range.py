@@ -1,4 +1,4 @@
-"""Stage 5 — what the mechanism would actually do on real mainnet traffic.
+"""Stage 5, what the mechanism would actually do on real mainnet traffic.
 
 Everything here is COUNTED from logs. No counterfactual is modelled and none can be: what price
 would have done had a trade been capped is unknowable, and modelling it would reintroduce the

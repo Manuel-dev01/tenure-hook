@@ -1,4 +1,4 @@
-# LP outcome A/B — what the sandbox can and cannot show
+# LP outcome A/B, what the sandbox can and cannot show
 
 Produced by `test/LPOutcomeTest.t.sol`. Three arms, identical traffic, identical starting state via
 snapshot/revert. Pool 0.30%, LP position 1e22 liquidity over ticks ±60000.
@@ -14,7 +14,7 @@ Retail has two-sided history (10,000 bps) so is never capped.
 | **B** tranching | 5.00 | 0.015 | 9515.05 | 9489.11 |
 | **C** tranching + split attack | **5.00** | **0.015** | **9515.05** | **9489.11** |
 
-## Finding 1 — splitting buys nothing
+## Finding 1, splitting buys nothing
 
 **Arms B and C are byte-identical on every measured quantity.** The informed trader attempting to
 split an 80-unit take into cap-sized pieces inside one transaction realises exactly the same 5 units
@@ -25,9 +25,9 @@ meter, arm C would have converged to arm A and the cap would have been cosmetic.
 
 Asserted, not eyeballed: `assertEq(C.informedVolume, B.informedVolume)`.
 
-## Finding 2 — tranching restrains the take, and costs fees, proportionally
+## Finding 2, tranching restrains the take, and costs fees, proportionally
 
-Tranching cut the informed take from 80 to 5 units — a 16× reduction — and cut LP fee income from
+Tranching cut the informed take from 80 to 5 units, a 16× reduction, and cut LP fee income from
 that flow by exactly the same factor, 0.240 → 0.015. Fees are linear in volume, so **the restraint
 and the cost are the same number seen from two sides.** There is no free lunch here and we do not
 present one.
@@ -44,7 +44,7 @@ and the *sign of the answer flips with that choice*:
 | 1.01 | −0.21 |
 | **1.02** | **+0.58** |
 
-Valuing at arm A's own final price is worse than arbitrary — it is **biased toward A by
+Valuing at arm A's own final price is worse than arbitrary. It is **biased toward A by
 construction**, since A's inventory is exactly what that price implies.
 
 Picking whichever price makes tranching look good would be precisely the tuned constant
@@ -55,16 +55,16 @@ sandbox.** It is measurable against real market data, which is Stage 5's fork-re
 This is the same discipline as the lookback result: publish the parameter dependence instead of
 hiding inside one confident figure.
 
-## S5 — the harness has no adversary, so it was mutated
+## S5. The harness has no adversary, so it was mutated
 
 The A/B has no revert to catch a mistake, making it the piece most likely to be green for the wrong
 reason. Two mutations, both asserted in the suite:
 
-- **`test_S5_HarnessCollapsesWhenTranchingDisabled`** — with tranching off on both sides, the arms
+- **`test_S5_HarnessCollapsesWhenTranchingDisabled`**, with tranching off on both sides, the arms
   must be identical in volume, both token balances, and final price. If they are not, the harness is
   measuring traffic ordering or fee accrual rather than the mechanism, and every number above is
   void.
-- **`test_S5_NoDifferenceWhenNobodyIsCapped`** — give the informed trader full standing so the
+- **`test_S5_NoDifferenceWhenNobodyIsCapped`**, give the informed trader full standing so the
   tranche never binds; tranching must then make no difference at all.
 
 Both pass.
@@ -72,7 +72,7 @@ Both pass.
 ## A modelling correction worth recording
 
 The first run compared arms unfairly: arm B's trader abandoned the trade when denied (0 volume)
-while arm C's fell back to a cap-sized swap. That made splitting look productive — arm C appeared to
+while arm C's fell back to a cap-sized swap. That made splitting look productive, arm C appeared to
 realise 5 units against arm B's 0.
 
 Both arms now model the same rational trader: **denied the full size, take what you can.** The two
@@ -82,4 +82,4 @@ arms then differ *only* in whether splitting is attempted, which is the variable
 
 This sandbox establishes that the meter works and quantifies the fee cost. It does **not** establish
 that tranching improves LP outcomes. That claim requires real subsequent prices and is not made
-until Stage 5 produces them — or not made at all, if Stage 5 does not support it.
+until Stage 5 produces them, or not made at all, if Stage 5 does not support it.

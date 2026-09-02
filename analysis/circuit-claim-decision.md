@@ -6,10 +6,10 @@
 
 ## The two candidates
 
-**A — adverse-selection score.** Estimate how much the address's flow costs LPs, from price
+**A, adverse-selection score.** Estimate how much the address's flow costs LPs, from price
 movement after each swap. Requires a price series, a post-trade window, and a threshold.
 
-**B — directional balance.** Over a lookback window, what fraction of this address's swaps on this
+**B, directional balance.** Over a lookback window, what fraction of this address's swaps on this
 pool were in each direction. Computable from swap logs alone.
 
 ## Decision: B
@@ -17,7 +17,7 @@ pool were in each direction. Computable from swap logs alone.
 ### 1. B describes; A infers. That distinction already killed one project this week.
 
 Roundtrip died because it **inferred an operation from a state prefix**. Adverse-selection scoring
-infers *intent* from *subsequent price movement* — the same move, one layer out. Directional balance
+infers *intent* from *subsequent price movement*, the same move, one layer out. Directional balance
 is a property of the address's own realised history: no inference about why they traded, no claim
 about what happened after.
 
@@ -38,7 +38,7 @@ A is more original-sounding. That is exactly why it is a trap.
 > *"Brevis proves the history is real; it doesn't prove your metric is the right one. Change the
 > lookback and the same address flips."*
 
-Against **A** this is devastating — the lookback is one of *three* free parameters, alongside the
+Against **A** this is devastating. The lookback is one of *three* free parameters, alongside the
 price series and the threshold, and every one is a modelling choice to defend on stage.
 
 Against **B** the lookback is the *only* free parameter, and it is answered by showing the
@@ -46,7 +46,7 @@ sensitivity rather than arguing about it.
 
 ### 4. Anti-goal compliance
 
-A requires a threshold on a continuous modelled score — a tuned heuristic, which the anti-goal blacklist bans outright.
+A requires a threshold on a continuous modelled score, a tuned heuristic, which the anti-goal blacklist bans outright.
 B maps balance to depth **continuously and monotonically, with no cliff**, so there is no threshold
 to tune and no bracket to fall into.
 
@@ -67,7 +67,7 @@ Functionality is graded against our own stated scope.
 But every round trip pays the pool fee. So standing has a **real, non-zero acquisition cost**, paid
 to LPs. The attack on the mechanism *is* the mechanism working: you pay liquidity providers to earn
 depth. That is a better answer than any anti-gaming heuristic would be, and it strengthens the
-anti-whitelist defence — standing is permissionlessly acquirable, at a price everyone pays equally.
+anti-whitelist defence, standing is permissionlessly acquirable, at a price everyone pays equally.
 
 ## Required: sensitivity, not a single number
 
@@ -77,5 +77,5 @@ converts the strongest attack on the design into a slide we chose to make.
 
 ## Ineligibility check
 
-Directional balance is a **count ratio over swap direction**, not volume — so it stays clear of
+Directional balance is a **count ratio over swap direction**, not volume, so it stays clear of
 Brevis's ineligible-metric category. Confirm against Brevis docs before implementing.

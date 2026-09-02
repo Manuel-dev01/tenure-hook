@@ -14,14 +14,14 @@ Everything below is reproducible from this repository.
 > price the swap on **what the composite operation structurally is**, rather than inferring
 > toxicity from statistics after the fact.
 
-The claimed wedge: *"It doesn't infer that a trade was arbitrage — it observes the shape of the
+The claimed wedge: *"It doesn't infer that a trade was arbitrage. It observes the shape of the
 operation as it runs."*
 
 Three questions gated the build. Q2 was the go/no-go; Q3 was the experiment.
 
 ---
 
-## Q1 — hook-local transient storage. PASS
+## Q1, hook-local transient storage. PASS
 
 Hook-local `tstore`/`tload` persists across legs within one `unlock` and is cleared between
 transactions.
@@ -32,12 +32,12 @@ transactions.
 | `test_Q1_TransientClearedBetweenTxs` | both transactions start clean (requires `--isolate`) |
 
 **Consequence worth stating plainly:** transient storage is transaction-scoped, so
-**cross-transaction sandwiches are structurally invisible** to any hook built this way. Not hard —
+**cross-transaction sandwiches are structurally invisible** to any hook built this way. Not hard, 
 invisible. This was a known design boundary, and it is now verified rather than assumed.
 
 ---
 
-## Q2 — reading PoolManager transient state via `exttload`. PASS
+## Q2, reading PoolManager transient state via `exttload`. PASS
 
 A hook **can** read the PoolManager's flash-accounting deltas mid-swap, from outside the
 PoolManager, using `IExttload`.
@@ -57,7 +57,7 @@ so "zero" and "wrong slot" are indistinguishable unless you force the issue:
 `test_Q2_WrongSlotReadsZeroSoRightSlotIsNotGarbage` shows a target that never locked reads `0`
 while the correct slot reads the known value.
 
-Slot derivations were **imported** from v4-core, never transcribed —
+Slot derivations were **imported** from v4-core, never transcribed, 
 `NonzeroDeltaCount.NONZERO_DELTA_COUNT_SLOT` and `CurrencyDelta._computeSlot` are both `internal`
 and usable by import, which binds them to the pinned submodule at compile time and removes the
 transcription failure mode entirely.
@@ -70,7 +70,7 @@ transcription failure mode entirely.
 
 v4-core's `PoolSwapTest` calls `manager.unlock()` **once per swap and fully settles before
 returning**. Every scenario built from stock routers therefore reads `nonzeroDeltaCount == 0` at
-the hook boundary — every traffic type looks identical.
+the hook boundary, every traffic type looks identical.
 
 Had the experiment been run with stock tooling it would have reported "no separation" for a
 **tooling** reason rather than a real one: a false negative that kills a live hypothesis while
@@ -87,7 +87,7 @@ by hand, exactly, before any scenario is recorded.
 
 ---
 
-## Q3 — the experiment. FAIL
+## Q3, the experiment. FAIL
 
 **The predicate under test**, stated so it could be falsified:
 
@@ -96,13 +96,13 @@ by hand, exactly, before any scenario is recorded.
 
 A swap always credits the locker in the output currency, so the opposing sign is a debt: the locker
 already owes the very currency this leg will pay them, i.e. the operation is closing a cycle.
-Strictly boolean — no threshold, no magnitude, no tuning constant.
+Strictly boolean, no threshold, no magnitude, no tuning constant.
 
 ### The five signatures
 
 | # | Scenario | nonzero deltas | delta in A | delta in B | delta in OUT | Predicate |
 |---|---|---|---|---|---|---|
-| — | **control** (hand-calculated) | 1 | −1,000,000 | 0 | −1,000,000 | true |
+|, | **control** (hand-calculated) | 1 | −1,000,000 | 0 | −1,000,000 | true |
 | 1 | single-hop retail | 0 | 0 | 0 | 0 | false |
 | 2 | multi-hop A to B to C | 2 | +998501997253744881 *(B)* | 0 *(C)* | 0 | false |
 | 3 | zap then add liquidity | 0 | 0 | 0 | 0 | false |
@@ -115,7 +115,7 @@ Rows 2 and 5b observe the B/C pool, so the positional columns hold B and C.
 ### Rows 4 and 5 are isomorphic
 
 Not similar. **Byte-identical on every field the hook can observe.** This is asserted in
-`test_Q3_ARB_vs_BATCH_SideBySide`, not eyeballed off a log — if a future change ever separates
+`test_Q3_ARB_vs_BATCH_SideBySide`, not eyeballed off a log, if a future change ever separates
 them, that test fails.
 
 The two scenarios were given **deliberately different** second-leg amounts (`-1e18` vs `-37e16`)
@@ -126,7 +126,7 @@ this boundary.
 
 ---
 
-## The general result — this is the part that matters
+## The general result. This is the part that matters
 
 The isomorphism is not a coincidence of chosen parameters. It follows from where the hook sits.
 
@@ -145,7 +145,7 @@ Therefore:
 > **A hook never observes an operation. It observes a state prefix, and infers an operation from it.**
 
 The predicate cannot distinguish *"closing a loop"* from *"holding an opposing delta and about to
-do something else entirely"* — **at the instant it fires, those are the same state.** The collision
+do something else entirely"*, **at the instant it fires, those are the same state.** The collision
 set is not "solvers", and it is not enumerable: it is *every operation sharing a prefix with a
 toxic one*. No amount of additional scenario design closes that, because the missing information
 does not exist yet at the moment the decision must be made.
@@ -157,14 +157,14 @@ transient state at `beforeSwap` is classifying a prefix.
 
 The pitch was *observes structure during execution, rather than inferring it afterwards*. What the
 code actually does is infer an operation from a partial state. That is inference with a fresher
-input — which is the pattern the project was defined against.
+input, which is the pattern the project was defined against.
 
 A separator was **not** attempted via intent, calldata shape, or router identity. Those are
 heuristics, and a heuristic layered on a structural observation is a fee dial wearing a costume.
 
 ### The one result that cuts the other way
 
-Scenario 5b — a batch that does **not** close a currency cycle — does not trip the predicate. So
+Scenario 5b, a batch that does **not** close a currency cycle, does not trip the predicate. So
 the predicate is not flagging "solver flow" broadly; it flags **cycle closure** specifically, which
 is a narrower and more defensible category than expected. It was weighed and did not change the
 outcome, because the prefix problem above is not bounded by the solver/arb distinction.
@@ -173,7 +173,7 @@ outcome, because the prefix problem above is not bounded by the solver/arb disti
 
 ## Disqualified before it could tempt anyone
 
-The one axis on which rows 4 and 5 could be separated is **exact amount matching** — an arbitrage
+The one axis on which rows 4 and 5 could be separated is **exact amount matching**, an arbitrage
 bot passes through the credit it just received, whereas two unrelated users' amounts are
 independent.
 
@@ -208,6 +208,6 @@ Two verified facts, carried into the v4 trap list as v4 traps:
 
 1. **`beforeSwap` fires before `_accountPoolBalanceDelta`.** A hook never sees the current leg's
    own accounting. Verified at PoolManager.sol:200 vs :224.
-2. **Deltas key to the locker, not the EOA** — `_accountPoolBalanceDelta(key, swapDelta, msg.sender)`.
+2. **Deltas key to the locker, not the EOA**, `_accountPoolBalanceDelta(key, swapDelta, msg.sender)`.
 
-The timeline was the point. The failure mode was never "Q3 fails" — it was "Q3 fails on Aug 30".
+The timeline was the point. The failure mode was never "Q3 fails". It was "Q3 fails on Aug 30".

@@ -1,6 +1,6 @@
-# TENURE — demo video script
+# TENURE, demo video script
 
-**Hard cap 5:00. Target 4:45. Your own voice — AI narration is a binary gate failure.**
+**Hard cap 5:00. Target 4:45. Your own voice. AI narration is a binary gate failure.**
 
 Rewritten 2026-09-02 after the Sepolia deployment. Two earlier drafts said things about Brevis that
 turned out to be false; **§0 is the current truth and supersedes anything you remember.**
@@ -11,7 +11,7 @@ turned out to be false; **§0 is the current truth and supersedes anything you r
 
 | source | use for | note |
 |---|---|---|
-| `forge script scripts/Demo.s.sol` | cold open, split beat | Deterministic, no network. Pipe through `sed -n '/== Logs ==/,$p'` — the raw run prints trace noise and a `Gas used:` line above `== Logs ==`. |
+| `forge script scripts/Demo.s.sol` | cold open, split beat | Deterministic, no network. Pipe through `sed -n '/== Logs ==/,$p'`, the raw run prints trace noise and a `Gas used:` line above `== Logs ==`. |
 | `forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL` | the "it's live" beat | Runs against the **deployed** Sepolia contracts. Four lines, all four green. |
 | the product recording (`recording-script.md`) | the "it's live" beat | A real swap through the app, wallet popups and all. Cut the shortest fragment showing one swap filling and one being capped. |
 
@@ -20,27 +20,27 @@ logical order and the wrong filmed order: the wow must land by 0:30, and it is *
 different outcome."* Open on demo beat **[3]** and backfill.
 
 **On showing the app live.** Cut this beat from the full product recording
-(`recording-script.md`), which swaps through the app for real — signature popup, confirmation and
+(`recording-script.md`), which swaps through the app for real, signature popup, confirmation and
 all. Those confirmations are the evidence that it is a product; do not edit them out. For the ≤5:00
 cut, use the shortest fragment that shows a swap filling and a swap being capped, and keep
 `VerifyDemo` for the rigour, since it matches by error selector.
 
 ---
 
-## §0 — the Brevis situation, stated correctly
+## §0, the Brevis situation, stated correctly
 
 Two earlier drafts were wrong about this, in opposite directions. Neither wording may survive:
 
-- ~~"gateway submission was unavailable — Brevis-side outage"~~ — **false.** Blames a sponsor for
+- ~~"gateway submission was unavailable. Brevis-side outage"~~, **false.** Blames a sponsor for
   our own bug.
-- ~~"Brevis routes queries only for registered app circuits, and we didn't complete that step"~~ —
+- ~~"Brevis routes queries only for registered app circuits, and we didn't complete that step"~~, 
   **also false.** There is no registration step.
 
 The real cause was ours: `brevis-sdk` was pinned five releases below their documented minimum, so
 every query carried a stale constant the gateway had since rotated. Fixed.
 
 **What is true now, and the only thing to say aloud:** the gateway accepts our proof, we paid the
-fee on Sepolia, and the query reached `QS_PAID` — then stopped. It never reached `QS_PROOF_READY`,
+fee on Sepolia, and the query reached `QS_PAID`, then stopped. It never reached `QS_PROOF_READY`,
 which is Brevis' own aggregation step. Their appsdkv3 deployment appears retired: zero events in a
 fortnight on Arbitrum, the one pair in their current docs. **So no proof has landed on any chain**,
 and standing in the app is written by the operator registry instead.
@@ -48,7 +48,7 @@ and standing in the app is written by the operator registry instead.
 If asked live, the short answer lands well:
 
 > *"We had a stale dependency pin. We'd written two confident explanations for that failure before
-> we ever traced it — both wrong. The real cause was greppable in our own dependency tree."*
+> we ever traced it. Both wrong. The real cause was greppable in our own dependency tree."*
 
 ---
 
@@ -59,13 +59,13 @@ If asked live, the short answer lands well:
 *"1.3% of that"* reads as 1.3% **of the 8.8%**, i.e. 0.11%. The real figure is 1.3% **of total
 volume**, within the 8.8%. Use:
 
-> Restraint falls on 8.8% of volume. Of that, one-sided flow is 1.3 points — the rest are addresses
+> Restraint falls on 8.8% of volume. Of that, one-sided flow is 1.3 points. The rest are addresses
 > with too little history to be measured.
 
 ### 2. "below 500,000 … caps a fifth" understates our own cost
 
 `analysis/mainnet-replay.md` measures a fifth (20.8%) **at** a 500,000 tranche. *Below* that it is
-worse — 28.5% at 250,000, 42.5% at 100,000. Use:
+worse, 28.5% at 250,000, 42.5% at 100,000. Use:
 
 > At a tranche of five hundred thousand USDC, base depth blocks about a fifth of long-tail swaps.
 > Below that, more.
@@ -98,11 +98,11 @@ worse — 28.5% at 250,000, 42.5% at 100,000. Use:
 
 ---
 
-## 0:00 – 0:25 — Cold open
+## 0:00 – 0:25. Cold open
 
 **On screen:** demo beat [3] only. Nothing before it.
 
-> Two traders. Same pool, same fee tier, same swap size — sixty units.
+> Two traders. Same pool, same fee tier, same swap size, sixty units.
 >
 > One fills. One is capped.
 >
@@ -118,11 +118,11 @@ lands.
 
 ---
 
-## 0:25 – 0:55 — Fee parity, and why it's structural
+## 0:25 – 0:55. Fee parity, and why it's structural
 
 **On screen:** `test_FeeParity_HookHoldsNoFeePermission` passing, then the mined address bits.
 
-> Every address pays the same fee. That isn't a policy we chose to follow — the hook's address is
+> Every address pays the same fee. That isn't a policy we chose to follow, the hook's address is
 > mined without the `BEFORE_SWAP_RETURNS_DELTA` permission bit, so it has no ability to alter
 > execution economics at all.
 >
@@ -131,12 +131,12 @@ lands.
 
 ---
 
-## 0:55 – 1:40 — Where standing comes from
+## 0:55 – 1:40. Where standing comes from
 
 **On screen:** demo beat [1], then the two fixtures.
 
 > Standing comes from proven trading history. A Brevis ZK circuit reads real mainnet swap logs and
-> proves one thing: directional balance — what fraction of your swaps went each way.
+> proves one thing: directional balance, what fraction of your swaps went each way.
 >
 > Trader A, seventeen buys and fifteen sells: 9,375 basis points. Trader B, twenty-nine buys and
 > zero sells: zero.
@@ -144,20 +144,20 @@ lands.
 > We don't infer toxicity. We don't look at price, or at what happened after your trade. We count
 > directions that already happened.
 >
-> Standing requires at least twenty swaps. That number was solved for, not picked — below twenty, a
+> Standing requires at least twenty swaps. That number was solved for, not picked, below twenty, a
 > single additional trade moves the metric more than the depth curve can resolve. The derivation is
 > in the repo, written before we ran any numbers.
 
 ---
 
-## 1:40 – 2:10 — The split attack
+## 1:40 – 2:10. The split attack
 
 **On screen:** demo beat [4].
 
 > The obvious attack: sign several credentials, split one large swap into cap-sized pieces in a
 > single transaction.
 >
-> It reverts. Depth is metered per transaction, not per swap, using transient storage — so
+> It reverts. Depth is metered per transaction, not per swap, using transient storage, so
 > splitting buys nothing.
 >
 > Anonymous swaps are metered too. Exempting them would have made signing strictly worse than not
@@ -165,7 +165,7 @@ lands.
 
 ---
 
-## 2:10 – 2:50 — It's live, and the cap binds on-chain
+## 2:10 – 2:50. It's live, and the cap binds on-chain
 
 **On screen:** the app reading standing and allowance, then the four `VerifyDemo` lines.
 
@@ -178,26 +178,26 @@ lands.
 > A swap over it reverts. Two legs in one transaction accumulate, and the second one reverts. And an
 > unsigned swap still executes, at base depth.
 >
-> Each is matched by the specific error the hook raises — not by "something reverted". A swap can
+> Each is matched by the specific error the hook raises, not by "something reverted". A swap can
 > fail for a dozen reasons that have nothing to do with depth, and a test that only checked for
 > failure would pass for every one of them.
 
 ---
 
-## 2:50 – 3:30 — How this compares
+## 2:50 – 3:30. How this compares
 
 **On screen:** a still, no terminal.
 
-This is the **Original Idea** criterion — 30%, the largest weight — answered aloud. Don't rush it.
+This is the **Original Idea** criterion, 30%, the largest weight, answered aloud. Don't rush it.
 
-> Most approaches to this problem move the price. Dynamic fees, directional fees, MEV auctions —
+> Most approaches to this problem move the price. Dynamic fees, directional fees, MEV auctions, 
 > they all decide what you pay.
 >
 > Tenure changes nothing about price. It changes how much of the book a single atomic transaction
 > can reach.
 >
 > That distinction matters, because a fee is a cost you can pay to keep extracting. A depth ceiling
-> isn't. And unlike a permissioned pool, nobody is excluded — zero standing still reaches five
+> isn't. And unlike a permissioned pool, nobody is excluded, zero standing still reaches five
 > percent of the tranche, and standing is permissionless to earn.
 >
 > We're aware of one adjacent idea in this space: loyalty-based fee discounts. This is the opposite.
@@ -208,12 +208,12 @@ panel. Deliver it **neutrally, as a distinction**, never as criticism.
 
 ---
 
-## 3:30 – 4:05 — Evidence on real traffic
+## 3:30 – 4:05. Evidence on real traffic
 
 **On screen:** the distribution chart.
 
 > We replayed real mainnet traffic on this pool. Fifty-two of nine hundred and six addresses clear
-> the twenty-swap threshold — and those fifty-two are ninety-two percent of volume.
+> the twenty-swap threshold, and those fifty-two are ninety-two percent of volume.
 >
 > Volume-weighted mean accessible depth: 6,721 basis points. Swap-weighted: 5,984.
 >
@@ -222,7 +222,7 @@ panel. Deliver it **neutrally, as a distinction**, never as criticism.
 
 ---
 
-## 4:05 – 4:40 — What it costs, and what we don't claim
+## 4:05 – 4:40. What it costs, and what we don't claim
 
 **On screen:** the 8.8% decomposition table.
 
@@ -230,7 +230,7 @@ panel. Deliver it **neutrally, as a distinction**, never as criticism.
 rigour; hedged delivery reads as weakness. You are likely the only entrant who declines to claim a
 benefit, and this is the beat most likely to be repeated in the judging room.
 
-> Restraint falls on 8.8% of volume. Of that, one-sided flow is 1.3 points — the rest are addresses
+> Restraint falls on 8.8% of volume. Of that, one-sided flow is 1.3 points. The rest are addresses
 > with too little history to be measured. That's the price of requiring evidence before granting
 > depth, and an operator who sets the tranche too low makes it worse: at a tranche of five hundred
 > thousand USDC, base depth blocks about a fifth of long-tail swaps. Below that, more.
@@ -240,13 +240,13 @@ benefit, and this is the beat most likely to be repeated in the judging room.
 > sensitivity is published instead.
 >
 > And the ZK path isn't fully live. The circuit proves standing, and the proof verifies. We paid
-> the fee on Sepolia and the query reached QS_PAID — then nothing came back in the forty-seven
+> the fee on Sepolia and the query reached QS_PAID, then nothing came back in the forty-seven
 > minutes we watched. No proof has landed on a chain. Standing in the app is operator-written, and
 > the app says so in a banner rather than letting you find out.
 
 ---
 
-## 4:40 – 4:55 — Close
+## 4:40 – 4:55. Close
 
 **On screen:** the demo's final two lines.
 
@@ -256,9 +256,9 @@ benefit, and this is the beat most likely to be repeated in the judging room.
 
 ---
 
-## Timing — measured, not estimated
+## Timing, measured, not estimated
 
-**729 spoken words**, counted from the quoted blocks in the timed beats:
+**718 spoken words**, counted from the quoted blocks in the timed beats:
 
 ```
 python - <<'EOF'
@@ -271,19 +271,19 @@ EOF
 
 | pace | runtime |
 |---|---|
-| 140 wpm (deliberate) | **5:12 — OVER THE CAP** |
-| 150 wpm (normal technical) | **4:51** |
-| 160 wpm (brisk) | 4:33 |
+| 140 wpm (deliberate) | **5:07, over the cap** |
+| 150 wpm (normal technical) | **4:47** |
+| 160 wpm (brisk) | 4:29 |
 
 Plus the two-second pause at 0:22 and whatever the on-screen beats need.
 
 **The Sepolia beat consumed the margin.** At the deliberate pace this script no longer fits, and
 recording long fails a binary gate. Two options:
 
-**1. Record at 150 wpm.** Ordinary technical delivery, not rushed. 4:51 leaves only ~9 seconds for
-the pause and the beat transitions — tight, with no room for a slow sentence.
+**1. Record at 150 wpm.** Ordinary technical delivery, not rushed. 4:47 leaves about 13 seconds for
+the pause and the beat transitions, tight, with no room for a slow sentence.
 
-**2. Cut 47 words and keep 140 wpm** → 4:52, or cut them *and* record at 150 for 4:32 and real
+**2. Cut 47 words and keep 140 wpm** gives 4:47, or cut them *and* record at 150 for 4:28 and real
 headroom. The four passages below are the most expendable in the script; each is a line the repo
 already makes in writing:
 
@@ -310,10 +310,10 @@ Do not spend any recovered margin adding content.
 
 ## Before you upload
 
-- [ ] Length under 5:00 — **check the file, not your memory**
+- [ ] Length under 5:00, **check the file, not your memory**
 - [ ] Your own voice throughout, no AI narration
 - [ ] Every number spoken re-derived from its artifact, not from the README
 - [ ] Nothing said about Brevis beyond §0
-- [ ] The app fragment shows a real swap — the wallet confirmations are the evidence, not noise
+- [ ] The app fragment shows a real swap, the wallet confirmations are the evidence, not noise
 - [ ] Plays logged-out
 - [ ] Repo link points to `main`

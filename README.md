@@ -1,55 +1,42 @@
 # Tenure
 
-**Depth is the product. Every address pays the same fee; what you earn is how much of the book you
-can reach.**
-
-A Uniswap v4 hook where the fee is **identical for every address**, and proven on-chain history
-determines **how much of the book you can take in a single swap**. Standing is proven with a Brevis
-ZK circuit over historical chain data and presented by the trader as an EIP-712 credential.
+**A Uniswap v4 hook where every address pays the same fee, and proven trading history decides how
+much of the book you can take in a single transaction.**
 
 Standing is an asset the trader holds, not a property the pool assigns. You are not sorted into a
-bracket — you present a credential you earned.
+bracket. You present a credential you earned.
 
-> **Status: complete and frozen.** The hook, the ZK circuit, the registry, the depth meter, the A/B
-> evidence and the mainnet replay are all done and tested. No code path adjusts a fee based on
-> standing, and the hook does not hold the permission to.
-
-## Live on Sepolia
-
-A demonstration pool guarded by the hook, and a UI that talks to it.
+Uniswap Hook Incubator 10 submission. Live on Sepolia, with a front end you can open and swap
+through.
 
 | | |
 |---|---|
 | **App** | https://manuel-dev01.github.io/tenure-hook/app.html |
 | **Landing** | https://manuel-dev01.github.io/tenure-hook/ |
-| Hook | [`0x8878dbEB…6D0080`](https://sepolia.etherscan.io/address/0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080) — address ends `0080`: `BEFORE_SWAP` only |
-| Router | [`0xA202C318…Fd3470`](https://sepolia.etherscan.io/address/0xA202C318D22Df67E6C347FC5b98F3d1adDFd3470) |
-| Standing registry | [`0x2fA2242c…709AaA`](https://sepolia.etherscan.io/address/0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA) — operator-written |
-| Pool | `tETH / tUSD`, fee 0.30%, tranche 250,000 |
+| **Run everything** | `bash scripts/demo.sh` |
+| **Tests** | 56 passing, 0 skipped |
 
-Press **Get demo tokens** in the app — the demo ERC20s mint on request, so nothing needs asking us for.
+---
 
-**Four behaviours are asserted against the deployed contracts**, matched by error *selector* rather
-than by "it reverted" — a swap can revert for a dozen reasons unrelated to depth:
+## Contents
 
-```
-forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL
+| | |
+|---|---|
+| [Quick start](#quick-start) | clone, run, see it work |
+| [What is live](#what-is-live) | deployed addresses, and what is not live |
+| [How it works](#how-it-works) | the mechanism in one page |
+| [What this claims, and what it does not](#what-this-claims-and-what-it-does-not) | the honesty section |
+| [Impact](#impact-measured-on-15804-real-mainnet-swaps) | measured on real mainnet traffic |
+| [Limitations](#limitations) | every one we know of |
+| [Partner integrations](#partner-integrations) | Brevis and Uniswap v4, with file pointers |
+| [Repository history](#repository-history) | the predecessor that was falsified |
+| [Documentation map](#documentation-map) | where everything else lives |
+| [Running the tests](#running-the-tests) | suites, pins, attribution |
 
-1. swap at half the allowance   OK
-2. over the allowance           reverted ExceedsDepthAllowance
-3. split across legs in one tx  reverted DepthExhaustedThisTx
-4. unsigned swap at base depth  OK - nobody is excluded
-```
+**Deeper reading:** [ARCHITECTURE.md](ARCHITECTURE.md) for the design and why each piece is shaped
+the way it is. [DEMO.md](DEMO.md) for how to run and verify every claim yourself.
 
-(3) is the splitting attack and (4) is the anti-whitelist property — the two properties most easily
-lost in a refactor, so they are asserted on-chain rather than assumed.
-
-**Standing shown in the app is operator-written, not ZK-delivered**, and the app says so in a
-banner. `TenureRegistry` accepts only a Brevis callback; our query was accepted, priced and paid on
-Sepolia and reached `QS_PAID`, but no callback arrived in the 47 minutes we watched, so against that
-registry `standingOf()` returns 0 for every address. `OperatorStandingRegistry` sits behind the
-same interface for exactly this case. The figure it holds is not invented: 9,375 bps over 32 swaps
-is the balanced fixture's real circuit output, reproducible with `npm run prove -- balanced`.
+---
 
 ## Quick start
 
@@ -59,14 +46,16 @@ cd tenure-hook
 bash scripts/demo.sh
 ```
 
-**One command exercises the whole product** — build, 56 tests, the circuit's arithmetic, the claim
-gate, the offline mechanism demo, the live Sepolia contracts, and the front end. 19 checks, ~90
-seconds, and it needs **no secret of ours**: the on-chain stage signs with Anvil's public default
+One command exercises the whole project: build, 56 tests, the circuit's arithmetic, the claim gate,
+the offline mechanism demo, the live Sepolia contracts, and the front end. 19 checks, about 90
+seconds, and it needs **no secret of ours**. The on-chain stage signs with Anvil's public default
 key, whose address has standing written into the demo registry so a stranger can reproduce it.
 
-Every stage prints PASS, FAIL, or SKIP **with a reason** — a stage that cannot run says so rather
-than passing quietly. `--offline` skips the network; `--with-proof` also generates a real ZK proof.
-Narrative walkthrough in [`analysis/demo-runbook.md`](analysis/demo-runbook.md).
+Every stage prints PASS, FAIL, or SKIP **with a reason**. A stage that cannot run says so rather
+than passing quietly.
+
+**`--recurse-submodules` is required.** `lib/*` are gitlinks and a plain clone will not build. If
+you already cloned without it: `git submodule update --init --recursive`.
 
 Just the tests:
 
@@ -74,12 +63,78 @@ Just the tests:
 forge test --isolate
 ```
 
-**`--recurse-submodules` is required.** `lib/*` are gitlinks; a plain clone will not build.
-If you already cloned without it: `git submodule update --init --recursive`.
+Full walkthrough, including how to swap in the browser: **[DEMO.md](DEMO.md)**.
 
 ---
 
-## What this submission claims — and what it does not
+## What is live
+
+A demonstration pool guarded by the hook, on Sepolia, and a UI that talks to it.
+
+| | |
+|---|---|
+| Hook | [`0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080`](https://sepolia.etherscan.io/address/0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080) |
+| Router | [`0xA202C318D22Df67E6C347FC5b98F3d1adDFd3470`](https://sepolia.etherscan.io/address/0xA202C318D22Df67E6C347FC5b98F3d1adDFd3470) |
+| Standing registry | [`0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA`](https://sepolia.etherscan.io/address/0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA) |
+| ZK registry | [`0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5`](https://sepolia.etherscan.io/address/0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5) |
+| Pool | `tETH / tUSD`, fee 0.30%, tranche 250,000 |
+
+**The hook address ends `0080`.** That is the permission bitmap, mined into the address with
+CREATE2: `beforeSwap` and nothing else, with no `BEFORE_SWAP_RETURNS_DELTA`. The hook does not
+decline to change your fee. It cannot.
+
+Four behaviours are asserted against those deployed contracts, matched by **error selector** rather
+than by "it reverted", because a swap can fail for a dozen reasons unrelated to depth:
+
+```
+forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL
+
+1. swap at half the allowance   OK
+2. over the allowance           reverted ExceedsDepthAllowance
+3. split across legs in one tx  reverted DepthExhaustedThisTx
+4. unsigned swap at base depth  OK, nobody is excluded
+```
+
+(3) is the splitting attack and (4) is the anti-whitelist property. Those are the two properties
+most easily lost in a refactor, so they are asserted on chain rather than assumed.
+
+**What is not live.** No proof has been delivered on chain, so standing in the app is written by the
+operator registry, which is the second trust model behind the same interface. The figure it holds is
+not invented: 9,375 bps over 32 swaps is the balanced fixture's real circuit output, reproducible
+with `npm run prove -- balanced`. The app names which registry it reads, on every screen. Full
+record: [`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
+
+---
+
+## How it works
+
+**1. Prove your history.** A Brevis ZK circuit reads real Uniswap `Swap` logs and proves one number:
+directional balance, `2 × min(buys, sells) / total`, in basis points. Counts only. No price series,
+no post-trade window, no oracle. That restriction is machine enforced by `scripts/gate.sh`.
+
+**2. Standing is recorded** in a registry the hook reads. Proving takes 57 to 176 seconds, so it
+cannot happen inside `beforeSwap`. Standing is attested first and consumed later, never proven at
+swap time.
+
+**3. You sign a credential.** An EIP-712 `DepthCredential` binding the router, the pool, a maximum
+size, a nonce and a deadline. `beforeSwap` receives the locker, never your address, and
+`msgSender()` is self-reported by the router, so identity comes from a signature you control.
+
+**4. The pool caps your size, never your access.** Accessible depth runs linearly from **5%** of the
+pool's tranche at zero standing to **100%** at full standing. Continuous and monotonic, with no
+brackets and no cliffs.
+
+**5. Splitting buys nothing.** Depth is metered per transaction in transient storage, keyed to the
+recovered signer, so signing several credentials and splitting one large take into cap-sized pieces
+reverts. Unsigned swaps are metered too, because exempting them would make signing strictly worse
+than not signing and the mechanism would run backwards.
+
+Design, diagrams, and the v4 constraints that shaped each decision:
+**[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
+---
+
+## What this claims, and what it does not
 
 > The mechanism gates atomic depth by proven directional balance, **the gate binds**, and **it
 > cannot be split around**. Restraint costs fee income proportionally. **We do not claim to improve
@@ -91,306 +146,72 @@ together:
 
 | comparison | what it proves |
 |---|---|
-| arm A vs arm B | the cap **binds** — informed take falls 80.00 → 5.00 |
-| arm B vs arm C | the cap **cannot be routed around** — the split attack realises byte-identical volume, fees and inventory |
+| arm A vs arm B | the cap **binds**. Informed take falls from 80.00 to 5.00. |
+| arm B vs arm C | the cap **cannot be routed around**. The split attack realises byte-identical volume, fees and inventory. |
 
 That pairing is the point. Two weeks earlier this repository's predecessor died because the
-mechanism did not do what its pitch said (see [the falsification](analysis/roundtrip-negative-result.md)).
-This is the opposite outcome, measured against the one attack that would have made the cap cosmetic.
+mechanism did not do what its pitch said. This is the opposite outcome, measured against the one
+attack that would have made the cap cosmetic.
 
 **On the benefit claim.** Valuing the arms at a single reference price flips the sign of the result:
 tranching looks harmful at P = 0.98 and beneficial at P = 1.02. Valuing at the unconstrained arm's
-own final price is worse than arbitrary — it is biased toward that arm by construction. So no LP
-value figure is reported, and the sensitivity is published instead.
+own final price is worse than arbitrary, because it is biased toward that arm by construction. So no
+LP value figure is reported, and the sensitivity is published instead.
 
 ---
 
-## Impact — measured on 15,804 real mainnet swaps
+## Impact, measured on 15,804 real mainnet swaps
 
 Replayed against the pinned range on the USDC/WETH 0.05% pool
-([`analysis/mainnet-replay.md`](analysis/mainnet-replay.md)). Every figure below is counted from
-logs; none requires a counterfactual.
+([`analysis/mainnet-replay.md`](analysis/mainnet-replay.md)). Every figure is counted from logs.
+None requires a counterfactual.
 
 | measure | value |
 |---|---|
-| **volume-weighted mean accessible depth** | **6721 bps — 67.2% of the tranche** |
-| swap-weighted mean accessible depth | 5984 bps — 59.8% |
+| **volume-weighted mean accessible depth** | **6721 bps, 67.2% of the tranche** |
+| swap-weighted mean accessible depth | 5984 bps, 59.8% |
 | floor (no standing) | 500 bps |
 
 **The average dollar on this pool moves at roughly two-thirds of the tranche, while the average
-address sits near the floor. Depth tracks proven behaviour, not headcount.** That gap is the
+address sits near the floor.** Depth tracks proven behaviour, not headcount. That gap is the
 mechanism doing its job.
 
-### Who the restraint actually falls on — including people we did not aim at
+### Who the restraint actually falls on, including people we did not aim at
 
-8.8% of volume sits in the lowest depth band. **That is not one population, and the distinction
-matters:**
+8.8% of volume sits in the lowest depth band. That is not one population, and the distinction
+matters:
 
 | group | share of volume | is this the target? |
 |---|---|---|
 | measured, and one-sided | 1.3% | **yes** |
-| not enough history to be measured | ~7.5% | **no** |
+| not enough history to be measured | about 7.5% | **no** |
 
-The second group's only characteristic is being new to this pool. They are **not excluded** — they
+The second group's only characteristic is being new to this pool. They are **not excluded**. They
 trade at base depth like every unsigned swapper, and standing is permissionlessly acquirable by
 trading two-sidedly. But they pay part of the cost of a mechanism aimed at someone else, and that is
 the honest price of requiring evidence before granting depth.
 
 **This compounds with tranche sizing.** An operator who sets the tranche too low pushes more
 ordinary flow into that same floor. At a 500,000 USDC tranche, base depth blocks **20.8%** of
-long-tail swaps; below that it gets worse — **28.5%** at 250,000 and **42.5%** at 100,000. The
-median long-tail swap is 3,563 USDC. The two caveats are one point — *the cost of the mechanism
-lands partly on people it is not aimed at, and a badly sized tranche makes that worse.*
+long-tail swaps. Below that it gets worse: **28.5%** at 250,000 and **42.5%** at 100,000. The median
+long-tail swap is 3,563 USDC. The two caveats are one point. The cost of the mechanism lands partly
+on people it is not aimed at, and a badly sized tranche makes that worse.
 
 ---
 
-## Repository history, stated plainly
+## Limitations
 
-This repository began as **Roundtrip**, a different hook that was **falsified on 2026-08-23**, one
-day after starting. That negative result is kept here deliberately rather than deleted:
+Every one we know of, stated here rather than left to be found.
 
-**[`analysis/roundtrip-negative-result.md`](analysis/roundtrip-negative-result.md)**
-
-The short version: a hook can read the PoolManager's transient deltas mid-swap (verified), but it
-cannot classify operations from them, because `beforeSwap` fires at `PoolManager.sol:200` while
-delta accounting happens at `:224`. **A hook never observes an operation — it observes a state
-prefix and infers an operation from it.** Cyclic arbitrage and third-party batch settlement are
-byte-identical at that boundary. The tests still run and still prove it.
-
-Tenure is the successor. Roundtrip's capability is **not** carried into it.
-
----
-
-## Architecture
-
-```
-                  Stage 1 (built)                    Stage 3 (wiring)
-  ┌──────────┐                                    ┌──────────────────┐
-  │  trader  │ ── EIP-712 DepthCredential ──┐     │  Brevis circuit  │
-  └──────────┘    (locker, poolId,          │     │ directional bal. │
-                   maxSize, nonce,          │     └────────┬─────────┘
-                   deadline)                │              │ proof
-                                            ▼              ▼
-  ┌──────────┐    swap + hookData    ┌─────────────────────────────┐
-  │  router  │ ────────────────────► │        TenureHook           │
-  └──────────┘                       │  recovers signer            │
-                                     │  reads standingOf[trader]   │
-                                     │  caps size to depth share   │
-                                     │  NEVER touches the fee      │
-                                     └─────────────────────────────┘
-```
-
-**The entitlement.** Each pool has a **depth tranche** — the most any single swap may consume.
-Standing determines what *fraction* of that tranche a trader can take, rising linearly from 5% at
-zero standing to 100% at full standing. Continuous and monotonic: no brackets, no cliffs, nothing
-to tune.
-
-**Why a signature and not `msgSender()`.** `beforeSwap` receives the locker (router), never the
-trader. v4-periphery exposes `IMsgSender.msgSender()` but it is **self-reported** — a malicious
-router could name any high-standing address. Self-reported identity is not identity, so the trader
-signs an EIP-712 credential binding `(locker, poolId, maxSize, nonce, deadline)` and the hook reads
-the *recovered* signer's standing. Standing is an asset the trader presents, not a property the
-pool assigns.
-
-**Fee neutrality is structural, not policy.** The hook's mined address deliberately omits
-`BEFORE_SWAP_RETURNS_DELTA`, so it *cannot* alter execution economics even if code were added
-trying to. Asserted in `test_HookHoldsNoFeePermission`.
-
-**Nobody is excluded.** A swap presenting no credential at all still executes, at base depth. A
-credential is how a trader claims *more* than base, never how they gain entry. Asserted in
-`test_UnsignedSwapGetsBaseDepth` and `test_NobodyIsExcluded`.
-
-| Concern | Where |
+| Limitation | Detail |
 |---|---|
-| Depth enforcement at swap time | `src/TenureHook.sol:235` — `_beforeSwap` |
-| Per-transaction depth meter | `src/TenureHook.sol:317` — `_consumedDepth` / `_setConsumedDepth` |
-| Continuous depth curve (no cliffs) | `src/TenureHook.sol:192` — `depthFractionBps` |
-| Credential binding struct | `src/TenureHook.sol:101` — `DepthCredential` |
-| Anti-whitelist floor | `src/TenureHook.sol:51` — `BASE_DEPTH_BPS` |
-| Fee neutrality, structural | `src/TenureHook.sol:148` — `beforeSwapReturnDelta: false` |
-| Stage 1 tests (15) | [`test/TenureHookTest.t.sol`](test/TenureHookTest.t.sol) |
-
-**Forgery is a no-op, not an attack.** A forged signature recovers to the *forger's own* address, so
-they simply get their own standing rather than the victim's. There is nothing to steal: the
-credential names no beneficiary a thief could redirect. Asserted in
-`test_ForgedSignatureGetsForgersStanding`.
-
-### Depth is metered per transaction, not per swap
-
-A per-swap cap alone would be cosmetic: sign several credentials, split one large take into N
-cap-sized swaps in a single transaction, pay almost nothing extra. Standing would gate nothing.
-
-So consumed depth accumulates in **hook-local transient storage** across every leg of a transaction
-and is checked against the standing-derived entitlement. Consumption is keyed to the **recovered
-trader**, not the credential, so minting more signatures cannot raise the ceiling.
-
-**Per-transaction is the principled boundary, not the cheap one.** Atomicity is what makes a large
-take harmful. A trader splitting across blocks is exposed to price movement and other flow in
-between — that is ordinary trading, not extraction. What the hook gates is the atomic grab.
-
-**Unsigned swaps are metered too — anonymity is not an exemption.** Were they exempt, the cheapest
-route to the whole book would be to sign nothing and split at base depth, making standing strictly
-*worse* than no standing and running the mechanism backwards. Asserted in
-`test_Meter_UnsignedSplittingRevertsAtBaseCap`.
-
-#### Limitations, stated plainly
-
-- **Unsigned swaps batched by one router share a per-transaction bucket.** Any of those users can
-  sign a zero-standing credential — free, permissionless, no standing needed — and be metered
-  separately. Asserted in `test_Meter_ZeroStandingCredentialGetsItsOwnBucket`.
-- **Splitting across separate transactions in the same block still evades the cap.** It costs gas
-  per transaction and gives up atomicity, which makes it a materially weaker attack, but it is real.
-
-### Standing is undefined below 20 swaps
-
-Directional balance over a handful of trades is noise: at four swaps a single extra trade moves it
-5,000 bps. Rather than choose a lookback window that flatters the result, an address below **20
-observed swaps has no standing** and receives base depth alongside every unsigned swapper. N was
-derived from the metric's own arithmetic — one further swap must not move balance by more than 500
-bps, so `10000/(N+1) ≤ 500` — and **recorded before any numbers were run at any N**
-([`analysis/minimum-sample-decision.md`](analysis/minimum-sample-decision.md)).
-
-This removes the last free parameter: there is no lookback to pick, only a threshold on evidence
-sufficiency, which separates *measured* from *not yet measured* rather than good traders from bad.
-
-### Known limitation: proofs run against a historical block range
-
-`brevis-sdk v0.3.12` could not build receipt proofs for blocks containing **EIP-7702 (type 4)**
-transactions, which are present in current mainnet blocks. Measured, not assumed: the failing range
-carried 12 type-4 transactions, the pinned range zero. Blob transactions are *not* the problem — they
-appear in the working range too.
-
-The fixtures are therefore cut from a pinned pre-Pectra range, anchored at block **21,146,236**.
-See [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md).
-
-**This constraint is probably now lifted and we are not claiming it.** The upgrade to
-`brevis-sdk v0.3.33` pins a go-ethereum fork that does parse type 4
-(`core/types/transaction.go`, `SetCodeTxType = 0x04`). We have not re-cut the fixtures against a
-post-Pectra range, so the pinning stands as a property of *these fixtures*, not of the SDK. Stated
-this way round because an untested capability is not a result.
-
----
-
-## Milestone 0 gates
-
-| Gate | Question | Status |
-|---|---|---|
-| **T1a** | Does local Brevis proving work — compile, key-gen, prove, verify? | **PASS** |
-| **T1b** | Does gateway submission work? | **PASS.** The gateway accepts the query and returns a query key. It previously rejected it, and our first two written explanations for that were both wrong — see below |
-| **T2** | Can the hook bind a swap to a trader unforgeably, and fail closed? | **PASS** — 10/10 |
-
-The gate was closed with an example circuit. **The production circuit has since been wired and
-proven in its own right:**
-
-```
-circuit digest  0x0d0d4ebe86cc9ec341bc9b98d94d52bc9b7bfbe67be97ae75a3e71e8f5cd8baa
-vk hash         0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8
-constraints     1,601,003        setup 2m43s        proving 57-176s
-```
-
-That vk hash is the value `setVkHash` takes; the deploy script reads it back and reverts on
-mismatch.
-
-### The gateway rejection, and two wrong explanations of it
-
-Worth reading if you assess how a team handles its own errors.
-
-Gateway submission failed for a week with `invalid app circuit chain 1 dummy input commitment
-0x127d5d80...`. We explained it twice, in writing, without tracing it: first as *"a Brevis-side
-outage"*, then as *"our app circuit is not registered with Brevis"*. **Both were false**, and the
-first blamed a sponsor for our own bug.
-
-`0x127d5d80...` turned out to be a **string constant in the SDK version we had pinned**
-(`brevis-sdk@v0.3.12/common/const.go:3`). The live gateway expects a different value and serves it
-over an RPC; v0.3.17+ fetches it instead of hard-coding it, and Brevis document 0.3.17 as the
-minimum — *"It is not backward-compatible."* We were five releases below a documented floor.
-
-Upgrading to v0.3.33 fixes it, changes no circuit, hook or contract logic, and both fixtures below
-reproduce their expected figures exactly. Full record, including the deploy sequence and the exact
-`sendRequest` signature, in
-[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
-
-### Deployed to Sepolia — paid, accepted, not fulfilled
-
-Run end to end on 2026-09-02, and reported as measured rather than as intended.
-
-| step | result |
-|---|---|
-| `TenureRegistry` deployed | [`0x03F05F1c…af19B5`](https://sepolia.etherscan.io/address/0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5) — `expectedVkHash()` read back from chain |
-| `TenureHook` deployed | [`0x8878dbEB…6D0080`](https://sepolia.etherscan.io/address/0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080) — address ends `0080`, `BEFORE_SWAP` only |
-| fee quoted | `"0"` — a populated string, not an unset field (that would be `""` and fail to parse) |
-| `sendRequest` paid | [`0xd5f1a81b…06fb47`](https://sepolia.etherscan.io/tx/0xd5f1a81ba9a7277525dd79ec353d30ea06248fdbcbda946f56826b6ae406fb47) — status 1, `RequestSent` with the registry as callback target |
-| gateway status | **`QS_PAID`**, holding the correct circuit output, for 47 minutes / 567 blocks |
-| `brevisCallback` | **never fired.** `standing()` is still zero |
-
-The output the gateway holds decodes byte-for-byte to the one-sided fixture — trader
-`0x308c6fbd…`, 0 bps, 29 swaps, blocks 21126236–21145773 — so the proof itself is correct and ready.
-
-**Why this is not an integration bug on our side.** The gateway's own state machine locates the
-failure: `QS_TO_BE_PAID -> QS_PAID -> QS_PROOF_READY -> QS_COMPLETE`, and the query sits at
-**`QS_PAID`**. Reaching `QS_PAID` means Brevis *matched our on-chain payment to our query*, so the
-proofId, nonce, callback target, callback gas and fee were all correct — confirmed by the
-counterparty, not asserted by us. The step that never ran is `QS_PROOF_READY`: their aggregation.
-
-The service is also dormant. In the last 50,000 Sepolia blocks (~7 days) the BrevisRequest contract
-has exactly **one** event — ours. On **Arbitrum One**, the one pair in Brevis' current docs, its
-BrevisRequest has **zero** events in 5,000,000 blocks (~14 days), while control queries on the same
-endpoint return 2,050 WETH events in 2,000 blocks. Brevis have since moved to ProverNet and the Pico
-stack; this appsdkv3 deployment appears retired.
-
-Each plausible fault on our side was checked against the SDK source and eliminated — silent
-`submitProof` failure, call ordering, the `option` enum, and `use_callback` (hard-coded `true` in
-`prover/utils.go:57`). Full elimination table in the diagnosis doc.
-
-**The claim stops where the evidence does: no proof has landed on any chain, and no change to this
-repo would alter that.**
-
-Full trace, with the exact `sendRequest` signature and every hash, in
-[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
-
-### The proof is verified by two fixtures, not one
-
-A verifying proof only shows the circuit *ran*. It says nothing about whether the circuit computes
-directional balance. So the production circuit is proven against **two real mainnet addresses whose
-behaviour was determined from raw logs, independently of the circuit**:
-
-| fixture | real behaviour | expected | **circuit output** |
-|---|---|---|---|
-| `0x0f4a1d…7eca3` | 17 buys / 15 sells | 9375 bps | **9375 bps** |
-| `0x308c6f…5e2a6` | 29 buys / 0 sells | 0 bps | **0 bps** |
-
-Two fixtures differing in the predicted direction is what makes this evidence rather than a
-demonstration — and `npm run prove` **exits non-zero on mismatch**, so it is a check, not a printout.
-This is the same discipline applied to the circuit's own arithmetic elsewhere: mutating
-`min(buys,sells)` to `max` turns the unit test red naming the exact cause.
-
-Reproduce: `cd brevis/prover && go run ./cmd/main.go`, then `cd brevis/app && npm run prove -- balanced`.
-Full record in [`analysis/production-circuit-proof.md`](analysis/production-circuit-proof.md).
-
-### T2 — the identity gate
-
-`beforeSwap` receives the locker (router), never the trader. v4-periphery's `IMsgSender.msgSender()`
-exists for this but is **self-reported**, so a malicious router could name any high-standing address
-and take the largest size. Self-reported identity is not identity.
-
-The trader instead signs an EIP-712 `DepthCredential` binding `(locker, poolId, maxSize, nonce,
-deadline)`. The hook recovers the signer and reads *that* address's standing.
-
-Every negative case has its own test, and all revert:
-
-| Case | Error |
-|---|---|
-| forged signature | recovers a different address, whose standing is lower |
-| garbage signature | `InvalidSignature` |
-| missing `hookData` | *(probe only)* `MissingCredential` — the production `TenureHook` instead grants **base depth**, see Architecture |
-| replayed nonce | `ReplayedNonce` |
-| expired deadline | `ExpiredCredential` |
-| wrong locker | `WrongLocker` |
-| wrong pool | `WrongPool` |
-| over signed `maxSize` | `ExceedsDepthAllowance` |
-
-Nobody is excluded: an address with zero standing still receives a non-zero depth allowance. That
-is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDepthOnly`.
+| **No proof has landed on chain** | The circuit proves standing and the proof verifies against its verifying key, but delivery did not complete, so standing in the app is operator-written. [Record](analysis/brevis-gateway-diagnosis.md). |
+| **Proof fixtures use a historical block range** | `brevis-sdk v0.3.12` could not build receipt proofs for blocks containing EIP-7702 transactions, so the fixtures are cut from a pinned pre-Pectra range anchored at block 21,146,236. v0.3.33 pins a go-ethereum fork that does parse type 4, so the constraint is probably lifted, but the fixtures were never re-cut and we do not claim it is fixed. [Detail](analysis/pinned-proving-range.md). |
+| **Cross-transaction splitting still evades the cap** | Transient storage is transaction-scoped, so it clears between transactions. This costs gas and gives up atomicity. |
+| **Router-batched unsigned users share one bucket** | Any of them can sign a zero-standing credential, which is free and permissionless, to isolate themselves. |
+| **Opening-leg blindness** | `beforeSwap` fires before delta accounting, so the hook never sees the first leg of a composite operation. This is a v4 property, not a defect in the hook. |
+| **No LP outcome claim** | See [above](#what-this-claims-and-what-it-does-not). |
+| **One address holds standing on the demo pool** | A fresh wallet gets base depth, which is the correct behaviour and is what the app shows. |
 
 ---
 
@@ -398,19 +219,57 @@ is the anti-whitelist property, and it is asserted in `test_T2_StandingChangesDe
 
 | Partner | Where | What it does |
 |---|---|---|
-| **Brevis** | [`brevis/prover/circuits/directional_balance.go`](brevis/prover/circuits/directional_balance.go) | **the production circuit** — proves directional balance from swap logs only |
-| **Brevis** | [`brevis/prover/cmd/main.go`](brevis/prover/cmd/main.go) | prover service; instantiates the production circuit |
+| **Brevis** | [`brevis/prover/circuits/directional_balance.go`](brevis/prover/circuits/directional_balance.go) | the production circuit, proving directional balance from swap logs only |
+| **Brevis** | [`brevis/prover/cmd/main.go`](brevis/prover/cmd/main.go) | prover service, instantiates the production circuit |
 | **Brevis** | [`brevis/app/src/prove_standing.ts`](brevis/app/src/prove_standing.ts) | builds the proof request, proves locally, verifies the decoded output |
-| **Brevis** | `src/TenureRegistry.sol:83` | `handleProofResult` — ZK callback, `_vkHash` validated |
+| **Brevis** | `src/TenureRegistry.sol:83` | `handleProofResult`, the ZK callback, with `_vkHash` validated |
 | **Brevis** | `src/lib/BrevisAppZkOnly.sol:9` | vendored `BrevisAppZkOnly` callback base |
 | **Uniswap v4** | `src/TenureHook.sol:235` | `_beforeSwap` enforcing the depth entitlement |
-| **Uniswap v4** | `src/TenureHook.sol:136` | `getHookPermissions` — beforeSwap only, no fee power |
+| **Uniswap v4** | `src/TenureHook.sol:136` | `getHookPermissions`, beforeSwap only, no fee power |
 | **OpenZeppelin** | `src/TenureHook.sol:37` | `uniswap-hooks` v1.0.0 `BaseHook` |
 
+These `file:line` pointers are **machine checked** on every CI run by `scripts/check_pointers.py`,
+because `forge fmt` reflows source files and a pointer that was correct when written drifts
+silently.
+
 Attribution for vendored upstream code, and which files are ours versus upstream's:
-[`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). The circuit, the prover entrypoint's
-configuration and the proving script are ours; the surrounding scaffolding is upstream's
-quickstart.
+[`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). The circuit, the prover entrypoint's configuration
+and the proving script are ours. The surrounding scaffolding is upstream's quickstart.
+
+---
+
+## Repository history
+
+This repository began as **Roundtrip**, a different hook that was **falsified on 2026-08-23**, one
+day after starting. That negative result is kept here deliberately rather than deleted:
+**[`analysis/roundtrip-negative-result.md`](analysis/roundtrip-negative-result.md)**.
+
+The short version: a hook can read the PoolManager's transient deltas mid-swap, which was verified,
+but it cannot classify operations from them, because `beforeSwap` fires at `PoolManager.sol:200`
+while delta accounting happens at `:224`. **A hook never observes an operation. It observes a state
+prefix and infers an operation from it.** Cyclic arbitrage and third-party batch settlement are
+byte-identical at that boundary. The tests still run and still prove it.
+
+Tenure is the successor. Roundtrip's capability is **not** carried into it.
+
+---
+
+## Documentation map
+
+| Document | What it is for |
+|---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | the design, the two flows, and the v4 constraints that shaped them |
+| [DEMO.md](DEMO.md) | run and verify every claim yourself |
+| [VERIFY.md](VERIFY.md) | the verification protocol used at every stage of the build |
+| [`analysis/mainnet-replay.md`](analysis/mainnet-replay.md) | the impact figures, on 15,804 real swaps |
+| [`analysis/lp-outcome.md`](analysis/lp-outcome.md) | the three-arm A/B, and why no LP value figure is reported |
+| [`analysis/sensitivity.md`](analysis/sensitivity.md) | the reference-price sensitivity that made us decline the claim |
+| [`analysis/production-circuit-proof.md`](analysis/production-circuit-proof.md) | the circuit's real outputs, both fixtures |
+| [`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md) | what is and is not live in the ZK path, and two wrong explanations we published first |
+| [`analysis/minimum-sample-decision.md`](analysis/minimum-sample-decision.md) | why N = 20, derived before any numbers were run |
+| [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md) | why the fixtures use a historical block range |
+| [`analysis/roundtrip-negative-result.md`](analysis/roundtrip-negative-result.md) | the predecessor's falsification, kept |
+| [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md) | what is ours and what is upstream's |
 
 ---
 
@@ -425,15 +284,15 @@ forge test --isolate
 | Suite | Tests | What it proves |
 |---|---|---|
 | `TenureHookTest` | 21 | the depth entitlement, credential binding, fee neutrality, and the per-transaction meter |
-| `TenureRegistryTest` | 10 | Stage 3 — `_vkHash` validation and the minimum-sample rule |
-| `TenureIdentityTest` | 10 | T2 — identity binding and all fail-closed cases |
-| `LPOutcomeTest` | 3 | Stage 4 — the three-arm A/B and its own S5 mutations |
+| `TenureRegistryTest` | 10 | `_vkHash` validation and the minimum-sample rule |
+| `TenureIdentityTest` | 10 | identity binding and all fail-closed cases |
+| `LPOutcomeTest` | 3 | the three-arm A/B and its own mutation checks |
 | `DiscriminatorTest` | 12 | the Roundtrip falsification, still reproducible |
 
-`--isolate` is required for the cross-transaction half of the Roundtrip Q1 test; without it that
-one test skips loudly rather than passing vacuously.
+`--isolate` is required for the cross-transaction half of the Roundtrip test. Without it that test
+skips loudly rather than passing vacuously, and the gate treats a skip as a failure.
 
-## Pinned dependencies
+### Pinned dependencies
 
 | Dependency | Pin | Commit |
 |---|---|---|
@@ -441,15 +300,16 @@ one test skips loudly rather than passing vacuously.
 | `uniswap/v4-periphery` | `main` | `dce236d4e2057422d0791d9a973a58765eb46f65` |
 | `foundry-rs/forge-std` | tag `v1.16.2` | `bf647bd6046f2f7da30d0c2bf435e5c76a780c1b` |
 | `OpenZeppelin/uniswap-hooks` | tag `v1.0.0` | `1db96464698ee567521bd2dd65833ff1e1864ac7` |
+| `brevis-network/brevis-sdk` | `v0.3.33` | Brevis document 0.3.17 as the minimum supported version |
 
-`uniswap-hooks` is pinned to v1.0.0 rather than latest: v1.2.x imports `SwapParams` from
+`uniswap-hooks` is pinned to v1.0.0 rather than latest, because v1.2.x imports `SwapParams` from
 `v4-core/src/types/PoolOperation.sol`, which does not exist in our pinned v4-core `v4.0.0`.
 
 solc `0.8.26`, `evm_version = "cancun"`.
 
-## Attribution
+### Attribution
 
 Test scaffolding derives from `v4-core/test/utils/Deployers.sol` and
 `v4-periphery/test/shared/HookMiner.sol`. The transient-delta reader in `test/probe/` **imports**
-v4-core's slot derivations rather than transcribing them. Brevis code under `brevis/` is upstream's;
-see `brevis/ATTRIBUTION.md`.
+v4-core's slot derivations rather than transcribing them. Brevis code under `brevis/` is upstream's.
+See [`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md).

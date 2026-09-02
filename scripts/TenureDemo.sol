@@ -41,7 +41,7 @@ contract TenureDemo {
     uint256 constant TRANCHE = 100e18;
 
     // Keys for the two traders. The addresses these produce are NOT the mainnet addresses in the
-    // proofs — a demo cannot hold their private keys — so standing is recorded against these and
+    // proofs, a demo cannot hold their private keys, so standing is recorded against these and
     // the mainnet figures are carried across verbatim.
     uint256 constant K_BALANCED = 0xB0;
     uint256 constant K_ONESIDED = 0x0E;
@@ -79,7 +79,7 @@ contract TenureDemo {
     }
 
     // -----------------------------------------------------------------------------------
-    // setup — deliberately silent, this is not part of the story
+    // setup, deliberately silent, this is not part of the story
     // -----------------------------------------------------------------------------------
     function _setup() internal {
         mgr = new PoolManager(address(this));
@@ -121,7 +121,7 @@ contract TenureDemo {
     }
 
     // -----------------------------------------------------------------------------------
-    // 1 — two real proofs land on chain
+    // 1. Two real proofs land on chain
     // -----------------------------------------------------------------------------------
     function _act1_proofs() internal {
         console.log(" ");
@@ -150,7 +150,7 @@ contract TenureDemo {
     }
 
     // -----------------------------------------------------------------------------------
-    // 2 — standing becomes accessible depth
+    // 2, standing becomes accessible depth
     // -----------------------------------------------------------------------------------
     function _act2_depth() internal {
         console.log(" ");
@@ -166,7 +166,7 @@ contract TenureDemo {
     }
 
     // -----------------------------------------------------------------------------------
-    // 3 — the same swap, two outcomes
+    // 3, the same swap, two outcomes
     // -----------------------------------------------------------------------------------
     function _act3_sameSwap() internal {
         uint256 size = 60e18;
@@ -181,7 +181,7 @@ contract TenureDemo {
     }
 
     // -----------------------------------------------------------------------------------
-    // 4 — the split attack buys nothing
+    // 4, the split attack buys nothing
     // -----------------------------------------------------------------------------------
     function _act4_split() internal {
         uint256 cap = hook.maxSwapSize(key, onesided);
