@@ -9,7 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
 <style>
-  body { margin:0; background:oklch(0.94 0.014 82); }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin:0; background:oklch(0.94 0.014 82); overflow-x:hidden; }
   a { color:oklch(0.55 0.14 48); text-decoration:none; }
   a:hover { color:oklch(0.44 0.14 45); }
   .mono { font-family:'DM Mono',monospace; }
@@ -24,10 +25,21 @@
   .tab.on { color:oklch(0.2 0.012 60); border-bottom-color:oklch(0.55 0.14 48); }
   .cell { background:oklch(0.965 0.01 84); padding:18px 20px; }
   .k { font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; color:oklch(0.48 0.014 70); }
-  .row { display:flex; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid oklch(0.86 0.016 80); font-family:'DM Mono',monospace; font-size:12.5px; font-variant-numeric:tabular-nums; }
+  .row { display:flex; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid oklch(0.86 0.016 80); font-family:'DM Mono',monospace; font-size:12.5px; font-variant-numeric:tabular-nums; flex-wrap:wrap; }
   .row span:first-child { color:oklch(0.48 0.014 70); }
-  input { font-family:'DM Mono',monospace; font-size:32px; font-weight:300; font-variant-numeric:tabular-nums; border:none; background:transparent; width:100%; outline:none; color:oklch(0.2 0.012 60); padding:0; }
+  input[type=text] { font-family:'DM Mono',monospace; font-size:32px; font-weight:300; font-variant-numeric:tabular-nums; border:none; background:transparent; width:100%; min-width:0; outline:none; color:oklch(0.2 0.012 60); padding:0; }
+  input[type=text].bad { color:oklch(0.55 0.14 48); }
+  input[type=checkbox] { width:20px; height:20px; accent-color:oklch(0.55 0.14 48); }
   [hidden] { display:none !important; }
+  /* Horizontal gutters shrink on narrow screens. A fixed 44px is 22.5% of a 390px viewport. */
+  .wrap { max-width:1160px; margin:0 auto; padding-left:clamp(16px, 4vw, 44px); padding-right:clamp(16px, 4vw, 44px); }
+  /* min() lets the track collapse below its preferred width instead of forcing page scroll. */
+  .cols { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap:1px; background:oklch(0.2 0.012 60); border:1px solid oklch(0.2 0.012 60); }
+  .panel { background:oklch(0.965 0.01 84); padding:30px clamp(18px, 4vw, 32px) 34px; }
+  .preset { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; background:transparent; border:1px solid oklch(0.82 0.018 78); color:oklch(0.4 0.014 65); padding:7px 10px; cursor:pointer; }
+  .preset:hover:not(:disabled) { border-color:oklch(0.55 0.14 48); color:oklch(0.55 0.14 48); }
+  .preset:disabled { opacity:0.35; cursor:not-allowed; }
+  .big { font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
 </style>
 </head>
 <body>
@@ -35,7 +47,7 @@
 <div style="min-height:100vh; background:oklch(0.94 0.014 82); color:oklch(0.2 0.012 60); font-family:'Archivo',sans-serif; padding-bottom:100px;">
 
   <div style="border-bottom:1px solid oklch(0.2 0.012 60);">
-    <div style="max-width:1160px; margin:0 auto; padding:20px 44px; display:flex; justify-content:space-between; align-items:center; gap:32px; flex-wrap:wrap;">
+    <div class="wrap" style="padding-top:20px; padding-bottom:20px; display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap;">
       <div style="display:flex; align-items:center; gap:20px;">
         <a href="index.html" style="display:flex; align-items:flex-end; gap:3px; height:20px;">
           <div style="width:2px; height:8px; background:oklch(0.6 0.02 78);"></div>
@@ -46,45 +58,53 @@
         </a>
         <a href="index.html" class="mono" style="font-size:15px; letter-spacing:0.3em; color:oklch(0.2 0.012 60);">TENURE</a>
       </div>
-      <div class="mono" style="display:flex; align-items:center; gap:18px; font-size:10.5px; letter-spacing:0.1em; color:oklch(0.48 0.014 70); flex-wrap:wrap; white-space:nowrap;">
+      <div class="mono" style="display:flex; align-items:center; gap:14px; font-size:10.5px; letter-spacing:0.1em; color:oklch(0.48 0.014 70); flex-wrap:wrap;">
         <span id="pair">…</span>
-        <span style="width:1px; height:12px; background:oklch(0.82 0.018 78);"></span>
         <span style="color:oklch(0.2 0.012 60);" id="fee">FEE …</span>
         <span>identical for every address</span>
-        <span style="width:1px; height:12px; background:oklch(0.82 0.018 78);"></span>
-        <button id="connect" class="btn btn-ghost" style="padding:8px 16px; font-size:10px;">Connect</button>
+        <button id="connect" class="btn btn-ghost" style="padding:12px 18px; font-size:10px; min-height:44px;">Connect</button>
       </div>
     </div>
   </div>
 
-  <div id="banner" style="background:oklch(0.2 0.012 60); color:oklch(0.94 0.014 82);">
-    <div class="mono" style="max-width:1160px; margin:0 auto; padding:12px 44px; font-size:11px; letter-spacing:0.06em; line-height:1.7;">
+  <div style="background:oklch(0.2 0.012 60); color:oklch(0.94 0.014 82);">
+    <div class="wrap mono" style="padding-top:12px; padding-bottom:12px; font-size:11px; letter-spacing:0.06em; line-height:1.7;">
       <span style="color:oklch(0.78 0.13 55);">SEPOLIA · LIVE CONTRACTS</span>
-      &nbsp;·&nbsp; standing is <span style="color:oklch(0.78 0.13 55);">operator-written</span>, not ZK-delivered &mdash;
-      Brevis&rsquo; on-chain proof delivery is retired, so no proof has landed on any chain.
+      &nbsp;·&nbsp; standing here is <span style="color:oklch(0.78 0.13 55);">operator-written</span>, not ZK-delivered.
+      Our proof was accepted, priced and paid on-chain; Brevis&rsquo; aggregator never returned it, so no proof has landed on any chain.
       <a href="https://github.com/Manuel-dev01/tenure-hook/blob/main/analysis/brevis-gateway-diagnosis.md" style="color:oklch(0.78 0.13 55); text-decoration:underline;">Why</a>
     </div>
   </div>
 
   <div style="border-bottom:1px solid oklch(0.82 0.018 78);">
-    <div style="max-width:1160px; margin:0 auto; padding:0 44px; display:flex;">
+    <div class="wrap" style="display:flex;">
       <button class="tab on" id="tab-standing">Standing</button>
       <button class="tab" id="tab-swap">Swap</button>
     </div>
   </div>
 
-  <div style="max-width:1160px; margin:0 auto; padding:0 44px;">
+  <!-- Global status. Lives above the tabs' content so it is visible on BOTH tabs — the faucet
+       button is on Standing while its only other feedback was on the hidden Swap panel. -->
+  <div id="status" hidden class="wrap" style="padding-top:16px;">
+    <div style="border-left:3px solid oklch(0.55 0.14 48); background:oklch(0.925 0.016 82); padding:14px 18px;">
+      <div class="k" id="s-label" style="color:oklch(0.55 0.14 48);"></div>
+      <div style="font-size:14px; line-height:1.55; margin-top:8px; color:oklch(0.2 0.012 60); overflow-wrap:anywhere;" id="s-body"></div>
+      <div class="mono" style="font-size:11.5px; color:oklch(0.44 0.014 68); margin-top:8px; line-height:1.7; overflow-wrap:anywhere;" id="s-detail"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
 
     <!-- ───────────────────────────── STANDING ───────────────────────────── -->
     <div id="view-standing">
       <section style="padding:52px 0 44px; border-bottom:1px solid oklch(0.82 0.018 78);">
         <div style="display:flex; justify-content:space-between; align-items:baseline; gap:20px; margin-bottom:26px; flex-wrap:wrap;">
-          <div class="mono" style="font-size:10.5px; letter-spacing:0.24em; text-transform:uppercase; color:oklch(0.55 0.14 48);" id="standing-label">Standing — not connected</div>
+          <div class="mono" style="font-size:10.5px; letter-spacing:0.24em; text-transform:uppercase; color:oklch(0.55 0.14 48);" id="standing-label">Standing</div>
           <div class="mono" style="font-size:10.5px; letter-spacing:0.1em; color:oklch(0.48 0.014 70);" id="registry-link">registry …</div>
         </div>
 
         <div style="display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap;">
-          <div class="mono" id="standing-bps" style="font-size:104px; line-height:0.86; font-weight:300; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">—</div>
+          <div class="mono big" id="standing-bps" style="font-size:clamp(56px, 17vw, 104px); line-height:0.86; font-weight:300; letter-spacing:-0.02em;">0</div>
           <div style="padding-bottom:12px;">
             <div class="mono" style="font-size:15px; letter-spacing:0.14em; color:oklch(0.55 0.14 48);">BPS</div>
             <div style="font-size:13px; color:oklch(0.44 0.014 68); margin-top:4px;">directional balance</div>
@@ -97,34 +117,35 @@
             <div style="position:absolute; left:0; right:0; top:35px; height:9px; background-image:repeating-linear-gradient(to right, oklch(0.7 0.02 78) 0 1px, transparent 1px 5%);"></div>
             <div style="position:absolute; left:0; right:0; top:35px; height:16px; background-image:repeating-linear-gradient(to right, oklch(0.5 0.014 70) 0 1px, transparent 1px 25%);"></div>
             <div id="tick" style="position:absolute; left:0%; top:20px; height:30px; width:3px; background:oklch(0.55 0.14 48);"></div>
-            <div id="tick-label" class="mono" style="position:absolute; left:0%; top:0; transform:translateX(-50%); font-size:10px; letter-spacing:0.1em; color:oklch(0.55 0.14 48); white-space:nowrap;">—</div>
+            <div id="tick-label" class="mono" style="position:absolute; left:0%; top:0; transform:translateX(-50%); font-size:10px; letter-spacing:0.1em; color:oklch(0.55 0.14 48); white-space:nowrap;">0</div>
           </div>
-          <div class="mono" style="display:flex; justify-content:space-between; font-size:10px; letter-spacing:0.12em; color:oklch(0.48 0.014 70); margin-top:2px; white-space:nowrap;">
+          <!-- flex-wrap + no nowrap: three long labels cannot fit one 302px row at 390px. -->
+          <div class="mono" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 16px; font-size:10px; letter-spacing:0.12em; color:oklch(0.48 0.014 70); margin-top:2px;">
             <span>0 — all swaps one direction</span>
             <span>5,000</span>
             <span>10,000 — perfectly two-sided</span>
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:1px; margin-top:44px; background:oklch(0.2 0.012 60); border:1px solid oklch(0.2 0.012 60);">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap:1px; margin-top:44px; background:oklch(0.2 0.012 60); border:1px solid oklch(0.2 0.012 60);">
           <div class="cell">
             <div class="k">Swaps observed</div>
-            <div class="mono" id="swap-count" style="font-size:22px; margin-top:10px; font-variant-numeric:tabular-nums;">—</div>
-            <div style="font-size:12px; color:oklch(0.46 0.014 68); margin-top:6px;">minimum sample 20 · circuit budget 32</div>
+            <div class="mono big" id="swap-count" style="font-size:22px; margin-top:10px;">—</div>
+            <div style="font-size:12px; color:oklch(0.46 0.014 68); margin-top:6px;">minimum sample <span id="min-sample">20</span> · circuit budget 32</div>
           </div>
           <div class="cell">
             <div class="k">Accessible depth</div>
-            <div class="mono" id="depth-frac" style="font-size:22px; margin-top:10px; font-variant-numeric:tabular-nums;">—</div>
+            <div class="mono big" id="depth-frac" style="font-size:22px; margin-top:10px;">5.00%</div>
             <div style="font-size:12px; color:oklch(0.46 0.014 68); margin-top:6px;">of the pool&rsquo;s tranche</div>
           </div>
           <div class="cell">
             <div class="k">Source</div>
-            <div class="mono" id="source-kind" style="font-size:15px; margin-top:12px;">—</div>
+            <div class="mono big" id="source-kind" style="font-size:15px; margin-top:12px;">—</div>
             <div style="font-size:12px; color:oklch(0.46 0.014 68); margin-top:6px;" id="source-note">—</div>
           </div>
           <div class="cell">
             <div class="k">Fee you pay</div>
-            <div class="mono" id="fee-cell" style="font-size:15px; margin-top:12px;">—</div>
+            <div class="mono big" id="fee-cell" style="font-size:15px; margin-top:12px;">—</div>
             <div style="font-size:12px; color:oklch(0.46 0.014 68); margin-top:6px;">the same as everyone else</div>
           </div>
         </div>
@@ -134,7 +155,7 @@
 
       <section style="padding:44px 0 0;">
         <div class="mono" style="font-size:10.5px; letter-spacing:0.24em; text-transform:uppercase; color:oklch(0.55 0.14 48); margin-bottom:22px;">Attest, then consume</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:20px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap:20px;">
           <div style="border-top:2px solid oklch(0.82 0.018 78); padding-top:14px;">
             <div class="k">Not measured</div>
             <div style="font-size:13px; color:oklch(0.44 0.014 68); margin-top:8px; line-height:1.6;">Fewer than 20 observed swaps. No figure exists yet &mdash; and no figure means base depth, never exclusion.</div>
@@ -145,7 +166,7 @@
           </div>
           <div style="border-top:2px solid oklch(0.82 0.018 78); padding-top:14px;">
             <div class="k">Delivery</div>
-            <div style="font-size:13px; color:oklch(0.44 0.014 68); margin-top:8px; line-height:1.6;">Brevis&rsquo; aggregation is retired. Our query reaches <span class="mono" style="font-size:12px;">QS_PAID</span> and stops.</div>
+            <div style="font-size:13px; color:oklch(0.44 0.014 68); margin-top:8px; line-height:1.6;">Accepted, priced and paid. The query reached <span class="mono" style="font-size:12px;">QS_PAID</span> and stopped there.</div>
           </div>
           <div style="border-top:2px solid oklch(0.55 0.14 48); padding-top:14px;">
             <div class="k" style="color:oklch(0.55 0.14 48);">Recorded</div>
@@ -161,9 +182,9 @@
 
     <!-- ───────────────────────────── SWAP ───────────────────────────── -->
     <div id="view-swap" hidden>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:1px; margin-top:44px; background:oklch(0.2 0.012 60); border:1px solid oklch(0.2 0.012 60);">
+      <div class="cols" style="margin-top:44px;">
 
-        <div style="background:oklch(0.965 0.01 84); padding:30px 32px 34px;">
+        <div class="panel">
           <div class="mono" style="font-size:10.5px; letter-spacing:0.2em; text-transform:uppercase; color:oklch(0.55 0.14 48);">Order</div>
 
           <div style="margin-top:26px; border:1px solid oklch(0.82 0.018 78); padding:18px 20px;">
@@ -172,48 +193,53 @@
               <input id="amount" type="text" inputmode="decimal" value="100000" aria-label="Amount to swap">
               <div class="mono" id="sym0" style="font-size:13px; letter-spacing:0.1em; color:oklch(0.34 0.014 65);">—</div>
             </div>
+            <div id="amount-error" hidden class="mono" style="font-size:11px; color:oklch(0.55 0.14 48); margin-top:8px;"></div>
           </div>
 
-          <div style="margin-top:-1px; border:1px solid oklch(0.82 0.018 78); padding:18px 20px;">
-            <div class="k">Your balance</div>
-            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:12px;">
-              <div class="mono" id="balance0" style="font-size:32px; font-weight:300; font-variant-numeric:tabular-nums; color:oklch(0.3 0.012 62);">—</div>
-              <div class="mono" id="sym0b" style="font-size:13px; letter-spacing:0.1em; color:oklch(0.34 0.014 65);">—</div>
+          <!-- Presets computed from the CONNECTED address's real allowance. Without these, three of
+               the four headline behaviours need an amount the visitor has no way to guess. -->
+          <div style="margin-top:14px;">
+            <div class="k" style="margin-bottom:8px;">Try — sized to your allowance</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="preset" id="p-fill">fills</button>
+              <button class="preset" id="p-exceed">exceeds the cap</button>
+              <button class="preset" id="p-split">exhausts the meter</button>
             </div>
           </div>
 
           <div style="margin-top:22px; border-top:1px solid oklch(0.2 0.012 60);">
+            <div class="row"><span>Your balance</span><span id="balance0" class="big">—</span></div>
             <div class="row"><span>Fee</span><span id="fee-row">— fixed in the hook</span></div>
-            <div class="row"><span>Router</span><span id="router-row" class="mono">—</span></div>
-            <div class="row"><span>Legs in this transaction</span><span><label style="cursor:pointer;"><input type="checkbox" id="split"> split into 2</label></span></div>
+            <div class="row"><span>Router</span><span id="router-row" class="mono big">—</span></div>
+            <div class="row"><span>Legs in this transaction</span><span><label style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:44px;"><input type="checkbox" id="split"> split into 2</label></span></div>
           </div>
 
-          <div style="margin-top:30px; background:oklch(0.2 0.012 60); color:oklch(0.94 0.014 82); padding:22px;">
-            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px;">
-              <div class="k" style="color:oklch(0.78 0.13 55);">Credential presented</div>
+          <div style="margin-top:22px; background:oklch(0.2 0.012 60); color:oklch(0.94 0.014 82); padding:22px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;">
+              <div class="k" style="color:oklch(0.78 0.13 55);">Credential to be signed</div>
               <div class="mono" style="font-size:9.5px; letter-spacing:0.1em; color:oklch(0.66 0.012 70);">EIP-712</div>
             </div>
             <div class="mono" style="margin-top:16px; font-size:11.5px; line-height:2.1; font-variant-numeric:tabular-nums;">
-              <div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:oklch(0.66 0.012 70);">locker</span><span id="c-locker">—</span></div>
-              <div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:oklch(0.66 0.012 70);">poolId</span><span id="c-pool">—</span></div>
-              <div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:oklch(0.66 0.012 70);">maxSize</span><span id="c-max" style="color:oklch(0.78 0.13 55);">—</span></div>
-              <div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:oklch(0.66 0.012 70);">nonce</span><span id="c-nonce">—</span></div>
-              <div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:oklch(0.66 0.012 70);">deadline</span><span id="c-deadline">—</span></div>
+              <div class="row" style="border:none; padding:0; color:inherit;"><span style="color:oklch(0.66 0.012 70);">locker</span><span id="c-locker" class="big">—</span></div>
+              <div class="row" style="border:none; padding:0; color:inherit;"><span style="color:oklch(0.66 0.012 70);">poolId</span><span id="c-pool" class="big">—</span></div>
+              <div class="row" style="border:none; padding:0; color:inherit;"><span style="color:oklch(0.66 0.012 70);">maxSize</span><span id="c-max" class="big" style="color:oklch(0.78 0.13 55);">—</span></div>
+              <div class="row" style="border:none; padding:0; color:inherit;"><span style="color:oklch(0.66 0.012 70);">nonce</span><span id="c-nonce" class="big">on signing</span></div>
+              <div class="row" style="border:none; padding:0; color:inherit;"><span style="color:oklch(0.66 0.012 70);">deadline</span><span id="c-deadline" class="big">+1 hour</span></div>
             </div>
             <div style="font-size:13px; color:oklch(0.82 0.012 74); margin-top:16px; line-height:1.65; text-wrap:pretty;">Signed in your wallet, single-use, bound to this router and this pool. You hold it and present it; the pool reads it. Leave it unsigned and the swap still executes, at base depth.</div>
           </div>
         </div>
 
-        <div style="background:oklch(0.965 0.01 84); padding:30px 34px 34px;">
+        <div class="panel">
           <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;">
             <div class="mono" style="font-size:10.5px; letter-spacing:0.2em; text-transform:uppercase; color:oklch(0.55 0.14 48);">Depth allowance</div>
             <div class="mono" style="font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:oklch(0.48 0.014 70);">metered per transaction</div>
           </div>
 
-          <div style="display:flex; align-items:flex-end; gap:18px; margin-top:24px;">
-            <div>
-              <div class="k">Available to this address</div>
-              <div class="mono" id="allowance" style="font-size:60px; line-height:0.95; font-weight:300; font-variant-numeric:tabular-nums; margin-top:10px;">—</div>
+          <div style="display:flex; align-items:flex-end; gap:18px; margin-top:24px; flex-wrap:wrap;">
+            <div style="min-width:0;">
+              <div class="k" id="allowance-label">Available at base depth</div>
+              <div class="mono big" id="allowance" style="font-size:clamp(38px, 11vw, 60px); line-height:0.95; font-weight:300; margin-top:10px;">—</div>
             </div>
             <div class="mono" id="sym0c" style="padding-bottom:10px; font-size:13px; letter-spacing:0.1em; color:oklch(0.34 0.014 65);">—</div>
           </div>
@@ -221,33 +247,34 @@
           <div style="margin-top:38px;">
             <div style="position:relative; height:46px; border:1px solid oklch(0.2 0.012 60);">
               <div id="bar-order" style="position:absolute; left:0; top:0; bottom:0; width:0%; background:oklch(0.55 0.14 48);"></div>
-              <div id="bar-beyond" style="position:absolute; left:100%; top:0; bottom:0; right:0; background-image:repeating-linear-gradient(135deg, oklch(0.78 0.02 78) 0 1px, transparent 1px 6px);"></div>
-              <div id="bar-cap" style="position:absolute; left:100%; top:-8px; bottom:-8px; width:3px; background:oklch(0.2 0.012 60);"></div>
-              <div id="bar-base" style="position:absolute; left:5%; top:0; bottom:0; width:1px; background:oklch(0.94 0.014 82);"></div>
+              <!-- Default to base depth (5%), not 100%. A disconnected visitor was being shown a cap
+                   marker at the full tranche, which asserts the opposite of the mechanism. -->
+              <div id="bar-beyond" style="position:absolute; left:5%; top:0; bottom:0; right:0; background-image:repeating-linear-gradient(135deg, oklch(0.78 0.02 78) 0 1px, transparent 1px 6px);"></div>
+              <div id="bar-cap" style="position:absolute; left:5%; top:-8px; bottom:-8px; width:3px; background:oklch(0.2 0.012 60);"></div>
             </div>
             <div class="mono" style="font-size:9.5px; letter-spacing:0.1em; color:oklch(0.48 0.014 70); margin-top:8px;">
-              <div style="display:flex; justify-content:space-between; gap:16px; white-space:nowrap;">
+              <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
                 <span>0</span><span id="tranche-label">tranche —</span>
               </div>
-              <div style="display:flex; justify-content:space-between; gap:16px; white-space:nowrap; margin-top:14px; padding-top:12px; border-top:1px solid oklch(0.88 0.016 80);">
+              <div style="display:flex; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid oklch(0.88 0.016 80);">
                 <span style="color:oklch(0.55 0.14 48);" id="order-label">order —</span>
                 <span style="color:oklch(0.2 0.012 60);" id="allow-label">allowance —</span>
               </div>
-              <div style="margin-top:8px; color:oklch(0.34 0.014 65); white-space:nowrap;" id="base-label">base depth — · the floor without a credential</div>
+              <div style="margin-top:8px; color:oklch(0.34 0.014 65);" id="base-label">base depth — · the floor without a credential</div>
             </div>
           </div>
 
           <div style="margin-top:34px; border-top:1px solid oklch(0.2 0.012 60);">
-            <div class="row"><span>Pool tranche</span><span id="r-tranche">—</span></div>
-            <div class="row"><span>Depth fraction at your standing</span><span id="r-frac">—</span></div>
-            <div class="row"><span>Max swap size</span><span id="r-max">—</span></div>
-            <div class="row"><span>This order</span><span id="r-order" style="color:oklch(0.55 0.14 48);">—</span></div>
+            <div class="row"><span>Pool tranche</span><span id="r-tranche" class="big">—</span></div>
+            <div class="row"><span>Depth fraction at your standing</span><span id="r-frac" class="big">—</span></div>
+            <div class="row"><span>Max swap size</span><span id="r-max" class="big">—</span></div>
+            <div class="row"><span>This order</span><span id="r-order" class="big" style="color:oklch(0.55 0.14 48);">—</span></div>
           </div>
 
           <div id="constraint" hidden style="margin-top:26px; border-left:3px solid oklch(0.55 0.14 48); background:oklch(0.925 0.016 82); padding:18px 20px;">
             <div class="k" id="c-label" style="color:oklch(0.55 0.14 48);"></div>
-            <div style="font-size:15px; font-weight:300; line-height:1.55; margin-top:10px; color:oklch(0.2 0.012 60); max-width:52ch; text-wrap:pretty;" id="c-body"></div>
-            <div class="mono" style="font-size:11.5px; color:oklch(0.44 0.014 68); margin-top:12px; letter-spacing:0.02em; line-height:1.7;" id="c-detail"></div>
+            <div style="font-size:15px; font-weight:300; line-height:1.55; margin-top:10px; color:oklch(0.2 0.012 60); max-width:52ch; text-wrap:pretty; overflow-wrap:anywhere;" id="c-body"></div>
+            <div class="mono" style="font-size:11.5px; color:oklch(0.44 0.014 68); margin-top:12px; letter-spacing:0.02em; line-height:1.7; overflow-wrap:anywhere;" id="c-detail"></div>
           </div>
 
           <div style="display:flex; gap:12px; margin-top:30px; flex-wrap:wrap;">
@@ -273,8 +300,6 @@ const HOOK_ABI = [
   "function depthTranche(bytes32) view returns (uint256)",
   "function registry() view returns (address)",
   "function BASE_DEPTH_BPS() view returns (uint256)",
-  "function BPS() view returns (uint256)",
-  "function nonceUsed(address,uint256) view returns (bool)",
   // Errors, so a revert can be named rather than shown as a hex blob.
   "error ExceedsDepthAllowance(uint256 requested, uint256 allowed)",
   "error DepthExhaustedThisTx(uint256 requested, uint256 remaining)",
@@ -294,24 +319,35 @@ const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function allowance(address,address) view returns (uint256)",
   "function approve(address,uint256) returns (bool)",
-  // mint, not faucet(): faucet() gives 1,000 and the allowance at full standing is 235,150, so a
-  // visitor would need 236 clicks before they could try a swap anywhere near the cap.
+  // mint, not faucet(): faucet() gives 1,000 while the allowance at 9,375 bps is 235,150, so a
+  // visitor would need hundreds of clicks before they could try a swap near the cap.
   "function mint(address,uint256)"
 ];
 const ROUTER_ABI = [
   "function swap((address,address,uint24,int24,address) key, (bool,int256,bytes)[] legs) payable"
+];
+// Reverts raised BELOW the hook. Without these a bad input surfaces as an unreadable blob.
+const OTHER_ERRORS = [
+  "error SwapAmountCannotBeZero()",
+  "error InsufficientBalance()",
+  "error InsufficientAllowance()",
+  "error CurrencyNotSettled()"
 ];
 
 // The hook's seven reverts, in the design's own words. Each is a real custom error.
 const CONSTRAINTS = {
   ExceedsDepthAllowance: (a) => ({
     label: "Swap exceeds the allowance",
-    body: `This swap would take ${a[0]} of depth. ${a[1]} is available to this address.`,
+    body: a.length
+      ? `This swap would take ${a[0]} of depth. ${a[1]} is available to this address.`
+      : "This swap asks for more depth than this address can take in one transaction.",
     detail: "reduce the order, or raise standing and present a new credential"
   }),
   DepthExhaustedThisTx: (a) => ({
     label: "Depth exhausted for this transaction",
-    body: `The allowance has already been consumed by earlier legs of this transaction. ${a[1]} remains.`,
+    body: a.length
+      ? `Earlier legs of this transaction already consumed the allowance. ${a[1]} remains.`
+      : "Earlier legs of this transaction already consumed the allowance.",
     detail: "the allowance resets on the next transaction — no waiting period applies"
   }),
   WrongLocker: () => ({
@@ -338,22 +374,70 @@ const CONSTRAINTS = {
     label: "Signature does not recover",
     body: "The credential's signature did not recover to a valid address.",
     detail: "a credential is not transferable — sign with the address that holds the standing"
+  }),
+  SwapAmountCannotBeZero: () => ({
+    label: "Amount is zero",
+    body: "The pool rejects a zero-size swap. This is an input problem, not a depth constraint.",
+    detail: "enter an amount above zero"
+  }),
+  InsufficientBalance: () => ({
+    label: "Not enough demo tokens",
+    body: "This address does not hold enough of the input token for that order.",
+    detail: "press Get demo tokens on the Standing tab"
+  }),
+  InsufficientAllowance: () => ({
+    label: "Token approval missing",
+    body: "The router is not approved to move that much of the input token.",
+    detail: "retry — the app requests an approval before the swap"
   })
 };
 
-let D, provider, signer, me, hook, router, token0, token1, dec0 = 18, sym0 = "", poolKeyTuple, hookIface;
+let D, provider, signer, me, hook, router, token0, errIface;
+let dec0 = 18, sym0 = "", poolKeyTuple, ready = false;
+let allowanceWei = 0n, trancheWei = 0n, baseBps = 500n;
+
 const $ = (id) => document.getElementById(id);
 const fmt = (v, d = 18, p = 2) => Number(ethers.formatUnits(v, d)).toLocaleString(undefined, { maximumFractionDigits: p });
 const short = (a) => a.slice(0, 6) + "…" + a.slice(-4);
+const WRITE_IDS = ["execute", "execute-unsigned", "faucet", "p-fill", "p-exceed", "p-split"];
+
+function setStatus(label, body, detail) {
+  $("s-label").textContent = label;
+  $("s-body").textContent = body;
+  $("s-detail").innerHTML = detail || "";
+  $("status").hidden = false;
+}
+function clearStatus() { $("status").hidden = true; }
+
+function showConstraint(c) {
+  $("c-label").textContent = c.label;
+  $("c-body").textContent = c.body;
+  $("c-detail").innerHTML = c.detail;
+  $("constraint").hidden = false;
+}
+
+function lock(on) { WRITE_IDS.forEach((i) => { const el = $(i); if (el) el.disabled = on; }); }
 
 async function boot() {
-  D = await (await fetch("deployments.json")).json();
-  poolKeyTuple = [D.pool.currency0, D.pool.currency1, D.pool.fee, D.pool.tickSpacing, D.hook];
-  hookIface = new ethers.Interface(HOOK_ABI);
+  lock(true);
+  let res;
+  try {
+    res = await fetch("deployments.json", { cache: "no-store" });
+  } catch (e) {
+    throw new Error("could not fetch deployments.json — " + e.message);
+  }
+  // Without this check a 404 returns an HTML error page and .json() throws a bare SyntaxError.
+  if (!res.ok) throw new Error("deployments.json returned HTTP " + res.status);
+  D = await res.json();
 
-  $("fee").textContent = "FEE " + (D.pool.fee / 10000).toFixed(2) + "%";
-  $("fee-cell").textContent = (D.pool.fee / 10000).toFixed(2) + "%";
-  $("fee-row").textContent = (D.pool.fee / 10000).toFixed(2) + "% — fixed in the hook";
+  poolKeyTuple = [D.pool.currency0, D.pool.currency1, D.pool.fee, D.pool.tickSpacing, D.hook];
+  errIface = new ethers.Interface([...HOOK_ABI.filter((x) => x.startsWith("error")), ...OTHER_ERRORS]);
+  trancheWei = BigInt(D.pool.trancheWei);
+
+  const feePct = (D.pool.fee / 10000).toFixed(2) + "%";
+  $("fee").textContent = "FEE " + feePct;
+  $("fee-cell").textContent = feePct;
+  $("fee-row").textContent = feePct + " — fixed in the hook";
   $("router-row").textContent = short(D.router);
   $("registry-link").innerHTML =
     `registry <a href="${D.explorer}/address/${D.standingRegistry.address}">${short(D.standingRegistry.address)}</a>`;
@@ -363,115 +447,202 @@ async function boot() {
   $("c-pool").textContent = short(D.pool.id);
 
   // Read-only until a wallet connects, so the page is useful with no extension installed.
-  provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com", D.chainId);
+  provider = new ethers.JsonRpcProvider(D.rpcUrl, D.chainId);
+  hook = new ethers.Contract(D.hook, HOOK_ABI, provider);
   await loadPoolStatics();
+  ready = true;
+  refreshOrder(); // loadPoolStatics' own call was a no-op: `ready` was still false.
+  lock(false);
+}
+
+// Any await that can hang forever leaves the UI looking dead. Bound them.
+function withTimeout(p, ms, what) {
+  return Promise.race([
+    p,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(what + " timed out after " + ms / 1000 + "s")), ms))
+  ]);
 }
 
 async function loadPoolStatics() {
   const t0 = new ethers.Contract(D.pool.currency0, ERC20_ABI, provider);
   const t1 = new ethers.Contract(D.pool.currency1, ERC20_ABI, provider);
-  [sym0, dec0] = await Promise.all([t0.symbol(), t0.decimals()]);
-  const sym1 = await t1.symbol();
-  dec0 = Number(dec0);
-  $("pair").textContent = sym0 + " / " + sym1;
-  for (const id of ["sym0", "sym0b", "sym0c"]) $(id).textContent = sym0;
-  const tranche = BigInt(D.pool.trancheWei);
-  $("r-tranche").textContent = fmt(tranche, dec0) + " " + sym0;
-  $("tranche-label").textContent = "tranche " + fmt(tranche, dec0);
+  const [s0, d0, s1, baseOnChain, trancheOnChain] = await withTimeout(
+    Promise.all([
+      t0.symbol(), t0.decimals(), t1.symbol(),
+      // Read the constants rather than hardcoding them, so the page cannot drift from the hook.
+      hook.BASE_DEPTH_BPS().catch(() => 500n),
+      hook.depthTranche(D.pool.id).catch(() => trancheWei)
+    ]), 20000, "reading the pool");
+  sym0 = s0; dec0 = Number(d0);
+  baseBps = BigInt(baseOnChain);
+  if (BigInt(trancheOnChain) > 0n) trancheWei = BigInt(trancheOnChain);
+
+  $("pair").textContent = sym0 + " / " + s1;
+  for (const id of ["sym0", "sym0c"]) $(id).textContent = sym0;
+  $("r-tranche").textContent = fmt(trancheWei, dec0) + " " + sym0;
+  $("tranche-label").textContent = "tranche " + fmt(trancheWei, dec0);
+
+  // Nobody connected yet: show what an unknown address gets, which is the honest default.
+  allowanceWei = (trancheWei * baseBps) / 10000n;
+  paintAllowance(false);
   refreshOrder();
 }
 
+function paintAllowance(connected) {
+  const base = (trancheWei * baseBps) / 10000n;
+  const pct = trancheWei > 0n ? Number((allowanceWei * 10000n) / trancheWei) / 100 : 0;
+  $("allowance").textContent = fmt(allowanceWei, dec0);
+  $("allowance-label").textContent = connected ? "Available to this address" : "Available at base depth";
+  $("r-max").textContent = fmt(allowanceWei, dec0) + " " + sym0;
+  $("allow-label").textContent = "allowance " + fmt(allowanceWei, dec0);
+  $("base-label").textContent = "base depth " + fmt(base, dec0) + " · the floor without a credential";
+  if (!connected) $("r-frac").textContent = (Number(baseBps) / 10000).toFixed(4);
+  $("bar-cap").style.left = Math.min(100, pct) + "%";
+  $("bar-beyond").style.left = Math.min(100, pct) + "%";
+}
+
 async function connect() {
-  if (!window.ethereum) { alert("No wallet found. Install MetaMask, or read the page without connecting."); return; }
-  provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  const net = await provider.getNetwork();
+  if (!ready) { setStatus("Still loading", "The page is still reading the pool. Try again in a moment.", ""); return; }
+  if (!window.ethereum) {
+    setStatus("No wallet found",
+      "Install MetaMask to swap. Everything on this page is readable without one — the figures above are live from Sepolia.", "");
+    return;
+  }
+  const bp = new ethers.BrowserProvider(window.ethereum);
+  await bp.send("eth_requestAccounts", []);
+  const net = await bp.getNetwork();
   if (Number(net.chainId) !== D.chainId) {
     try {
-      await window.ethereum.request({ method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x" + D.chainId.toString(16) }] });
-      provider = new ethers.BrowserProvider(window.ethereum);
-    } catch { alert("Please switch to Sepolia."); return; }
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x" + D.chainId.toString(16) }]
+      });
+    } catch (e) {
+      // 4902 means the chain is not in the wallet at all — a different fix from "please switch".
+      setStatus(e && e.code === 4902 ? "Sepolia is not in your wallet" : "Wrong network",
+        e && e.code === 4902 ? "Add the Sepolia test network to your wallet, then connect again."
+                             : "This app runs on Sepolia. Switch network and connect again.", "");
+      return;
+    }
   }
+  // Re-check rather than assume the switch took effect.
+  const after = new ethers.BrowserProvider(window.ethereum);
+  if (Number((await after.getNetwork()).chainId) !== D.chainId) {
+    setStatus("Wrong network", "The wallet is still not on Sepolia.", "");
+    return;
+  }
+  // Only NOW replace the working read-only provider.
+  provider = after;
   signer = await provider.getSigner();
   me = await signer.getAddress();
   $("connect").textContent = short(me);
   hook = new ethers.Contract(D.hook, HOOK_ABI, provider);
   router = new ethers.Contract(D.router, ROUTER_ABI, signer);
   token0 = new ethers.Contract(D.pool.currency0, ERC20_ABI, signer);
-  token1 = new ethers.Contract(D.pool.currency1, ERC20_ABI, signer);
-  await loadPoolStatics();
+  clearStatus();
   await refreshStanding();
+}
+
+function connectSafely() {
+  clearStatus();
+  return connect().catch((e) => {
+    // A dismissed wallet prompt was previously an invisible unhandled rejection.
+    if (e && (e.code === "ACTION_REJECTED" || e.code === 4001)) {
+      setStatus("Connection cancelled", "You dismissed the wallet prompt. Press Connect to try again.", "");
+    } else {
+      setStatus("Could not connect", e && (e.shortMessage || e.message) || String(e), "");
+    }
+  });
 }
 
 async function refreshStanding() {
   if (!me) return;
   const reg = new ethers.Contract(D.standingRegistry.address, REGISTRY_ABI, provider);
-  const [bps, allowance, frac, s] = await Promise.all([
+  const [bps, allowance, s, minSample] = await withTimeout(Promise.all([
     hook.standingOf(me),
     hook.maxSwapSize(poolKeyTuple, me),
-    hook.standingOf(me).then((b) => hook.depthFractionBps(b)),
-    reg.standing(me).catch(() => [0n, 0n])
-  ]);
+    reg.standing(me),
+    reg.MIN_STANDING_SWAPS().catch(() => 20n)
+  ]), 20000, "reading your standing");
 
-  $("standing-label").textContent = "Standing — " + (Number(bps) > 0 ? "recorded" : "not measured");
+  const frac = await hook.depthFractionBps(bps);
+  const swaps = Number(s[1]);
+  $("min-sample").textContent = String(minSample);
+
+  // 0 bps means two different things. Distinguish them instead of calling both "not measured".
+  $("standing-label").textContent = "Standing — " +
+    (swaps === 0 ? "not measured"
+      : swaps < Number(minSample) ? `not measured (${swaps} of ${minSample} swaps)`
+      : "recorded");
   $("standing-bps").textContent = Number(bps).toLocaleString();
   const pct = Math.min(100, Number(bps) / 100);
   $("tick").style.left = pct + "%";
   $("tick-label").style.left = pct + "%";
   $("tick-label").textContent = Number(bps).toLocaleString();
-  $("swap-count").textContent = Number(s[1]) || "—";
+  $("swap-count").textContent = swaps ? String(swaps) : "—";
   $("depth-frac").textContent = (Number(frac) / 100).toFixed(2) + "%";
-
-  $("allowance").textContent = fmt(allowance, dec0);
-  $("r-max").textContent = fmt(allowance, dec0) + " " + sym0;
   $("r-frac").textContent = (Number(frac) / 10000).toFixed(4);
-  $("allow-label").textContent = "allowance " + fmt(allowance, dec0);
-  const tranche = BigInt(D.pool.trancheWei);
-  const base = tranche * 500n / 10000n;
-  $("base-label").textContent = "base depth " + fmt(base, dec0) + " · the floor without a credential";
-  $("bar-cap").style.left = Number(allowance * 100n / tranche) + "%";
-  $("bar-beyond").style.left = Number(allowance * 100n / tranche) + "%";
-  $("balance0").textContent = fmt(await token0.balanceOf(me), dec0);
+
+  allowanceWei = allowance;
+  paintAllowance(true);
+
+  // Last, and non-fatal: a balance read failing must not blank the panel above it.
+  try { $("balance0").textContent = fmt(await token0.balanceOf(me), dec0) + " " + sym0; }
+  catch { $("balance0").textContent = "—"; }
   refreshOrder();
 }
 
-function orderWei() {
-  try { return ethers.parseUnits(($("amount").value || "0").replace(/,/g, ""), dec0); }
-  catch { return 0n; }
+function parseAmount() {
+  const raw = ($("amount").value || "").trim().replace(/,/g, "");
+  if (raw === "") return { err: "enter an amount" };
+  if (!/^\d*\.?\d*$/.test(raw)) return { err: "digits only" };
+  let v;
+  try { v = ethers.parseUnits(raw, dec0); }
+  catch { return { err: "at most " + dec0 + " decimal places" }; }
+  if (v <= 0n) return { err: "must be greater than zero" };
+  return { value: v };
 }
+
+function orderWei() { const r = parseAmount(); return r.value ?? 0n; }
 
 function refreshOrder() {
-  const amt = orderWei();
-  const tranche = BigInt(D.pool.trancheWei);
+  if (!ready) return;
+  const r = parseAmount();
+  const amt = r.value ?? 0n;
+  $("amount").classList.toggle("bad", !!r.err);
+  $("amount-error").hidden = !r.err;
+  if (r.err) $("amount-error").textContent = r.err;
+  const pct = trancheWei > 0n ? Number((amt * 10000n) / trancheWei) / 100 : 0;
   $("r-order").textContent = fmt(amt, dec0) + " " + sym0;
   $("order-label").textContent = "order " + fmt(amt, dec0);
-  $("bar-order").style.width = Math.min(100, Number(amt * 100n / tranche)) + "%";
-  $("c-max").textContent = fmt(amt, dec0) + " " + sym0;
+  $("bar-order").style.width = Math.max(0, Math.min(100, pct)) + "%";
+  // Reflect the split: each credential is signed for half, so showing the whole order here
+  // misstated a field the user is about to sign.
+  const per = $("split").checked ? amt / 2n : amt;
+  $("c-max").textContent = fmt(per, dec0) + " " + sym0 + ($("split").checked ? " × 2" : "");
+  $("execute").disabled = !!r.err;
+  $("execute-unsigned").disabled = !!r.err;
 }
 
-function showConstraint(c) {
-  $("c-label").textContent = c.label;
-  $("c-body").textContent = c.body;
-  $("c-detail").textContent = c.detail;
-  $("constraint").hidden = false;
-}
-
-// Decode a revert into the hook's own vocabulary. v4 wraps hook reverts, so the inner
-// selector is searched for rather than assumed to be at offset 0.
+// Decode a revert into the hook's own vocabulary. v4 wraps hook reverts, so the inner selector is
+// searched for rather than assumed to be at offset 0.
 function explain(err) {
+  if (err && (err.code === "ACTION_REJECTED" || err.code === 4001)) {
+    return { label: "Cancelled in your wallet", body: "You dismissed the prompt. Nothing was sent.", detail: "" };
+  }
   const data = err?.data ?? err?.info?.error?.data ?? err?.error?.data;
   const hex = typeof data === "string" ? data : null;
-  if (hex) {
-    for (const frag of hookIface.fragments.filter((f) => f.type === "error")) {
-      const sel = hookIface.getError(frag.name).selector.slice(2);
-      const at = hex.indexOf(sel);
-      if (at >= 0) {
+  if (hex && errIface) {
+    for (const frag of errIface.fragments.filter((f) => f.type === "error")) {
+      const sel = errIface.getError(frag.name).selector.slice(2);
+      let at = hex.indexOf(sel);
+      if (at % 2 !== 0) at = hex.indexOf(sel, at + 1); // keep byte alignment
+      if (at >= 0 && at % 2 === 0 && CONSTRAINTS[frag.name]) {
         let args = [];
         try {
-          const decoded = hookIface.decodeErrorResult(frag.name, "0x" + hex.slice(at));
-          args = decoded.map((x) => (typeof x === "bigint" ? fmt(x, dec0) + " " + sym0 : String(x)));
-        } catch { /* selector matched but args are truncated by the wrapper — the name is enough */ }
+          args = errIface.decodeErrorResult(frag.name, "0x" + hex.slice(at))
+            .map((x) => (typeof x === "bigint" ? fmt(x, dec0) + " " + sym0 : String(x)));
+        } catch { /* the name alone is still correct; templates handle empty args */ }
         return CONSTRAINTS[frag.name](args);
       }
     }
@@ -479,16 +650,8 @@ function explain(err) {
   return {
     label: "Transaction failed",
     body: err?.shortMessage || err?.message || "The wallet or node rejected the transaction.",
-    detail: "this is not a depth constraint — check balance, approval and network"
+    detail: hex ? "revert data " + String(hex).slice(0, 42) + "…" : "not a depth constraint"
   };
-}
-
-async function ensureApproval(amount) {
-  const cur = await token0.allowance(me, D.router);
-  if (cur < amount) {
-    const tx = await token0.approve(D.router, ethers.MaxUint256);
-    await tx.wait();
-  }
 }
 
 async function buildLegs(signed) {
@@ -496,6 +659,7 @@ async function buildLegs(signed) {
   const split = $("split").checked;
   const parts = split ? [amt / 2n, amt - amt / 2n] : [amt];
   const legs = [];
+  const shown = [];
   for (const part of parts) {
     let hookData = "0x";
     if (signed) {
@@ -508,7 +672,8 @@ async function buildLegs(signed) {
         { name: "deadline", type: "uint256" }
       ]};
       const value = { locker: D.router, poolId: D.pool.id, maxSize: part, nonce, deadline };
-      $("c-nonce").textContent = "0x" + nonce.toString(16).slice(0, 6);
+      // Low-order digits: the high ones are identical across legs signed seconds apart.
+      shown.push("…" + nonce.toString(16).slice(-6));
       $("c-deadline").textContent = new Date(Number(deadline) * 1000).toLocaleTimeString();
       const sig = await signer.signTypedData(domain, types, value);
       hookData = ethers.AbiCoder.defaultAbiCoder().encode(
@@ -518,61 +683,133 @@ async function buildLegs(signed) {
     }
     legs.push([true, -part, hookData]);
   }
+  $("c-nonce").textContent = shown.length ? shown.join(", ") : "unsigned";
   return legs;
+}
+
+async function ensureApproval(amount) {
+  const cur = await token0.allowance(me, D.router);
+  if (cur < amount) {
+    setStatus("Approval needed first",
+      "Your wallet will ask twice: once to approve the router to move the input token, then once for the swap itself.",
+      "this approval is unlimited and happens only once per address");
+    const tx = await token0.approve(D.router, ethers.MaxUint256);
+    await withTimeout(tx.wait(), 180000, "the approval transaction");
+    clearStatus();
+  }
 }
 
 async function doSwap(signed) {
   $("constraint").hidden = true;
-  if (!me) { await connect(); if (!me) return; }
-  const btns = [$("execute"), $("execute-unsigned")];
-  btns.forEach((b) => (b.disabled = true));
+  clearStatus();
+  if (!me) { await connectSafely(); if (!me) return; }
+  if (parseAmount().err) return;
+
+  const btn = signed ? $("execute") : $("execute-unsigned");
+  const label = btn.textContent;
+  lock(true);
+  $("amount").disabled = true;
+  $("split").disabled = true;
   try {
-    await ensureApproval(orderWei());
+    // Cheap client-side check first: never make anyone pay for an approval to discover the cap.
+    const amt = orderWei();
+    if (amt > allowanceWei && !$("split").checked) {
+      showConstraint(CONSTRAINTS.ExceedsDepthAllowance(
+        [fmt(amt, dec0) + " " + sym0, fmt(allowanceWei, dec0) + " " + sym0]));
+      return;
+    }
+    btn.textContent = signed ? "Signing…" : "Simulating…";
     const legs = await buildLegs(signed);
-    // staticCall first: a revert then costs no gas and still carries the hook's error.
+    // Free simulation before anything is broadcast.
     await router.swap.staticCall(poolKeyTuple, legs);
+
+    btn.textContent = "Approving…";
+    await ensureApproval(amt);
+
+    btn.textContent = "Confirm in wallet…";
     const tx = await router.swap(poolKeyTuple, legs);
-    await tx.wait();
+    btn.textContent = "Pending…";
+    setStatus("Transaction submitted", "Waiting for Sepolia to include it. This usually takes 15–30 seconds.",
+      `<a href="${D.explorer}/tx/${tx.hash}" target="_blank" rel="noopener">view on Etherscan</a>`);
+    await withTimeout(tx.wait(), 180000, "the swap transaction");
+    clearStatus();
     showConstraint({
       label: "Swap executed",
       body: signed ? "The credential was accepted and the depth consumed." : "Executed with no credential, at base depth.",
-      detail: "tx " + tx.hash
+      detail: `<a href="${D.explorer}/tx/${tx.hash}" target="_blank" rel="noopener">${short(tx.hash)} on Etherscan</a>`
     });
-    await refreshStanding();
   } catch (e) {
     showConstraint(explain(e));
   } finally {
-    btns.forEach((b) => (b.disabled = false));
+    btn.textContent = label;
+    $("amount").disabled = false;
+    $("split").disabled = false;
+    lock(false);
+    refreshOrder();
+    // OUTSIDE the try: a refresh failure must never overwrite a truthful success panel.
+    refreshStanding().catch(() => {});
   }
 }
 
 // ── wiring ──────────────────────────────────────────────────────────────────
-$("connect").onclick = connect;
-$("tab-standing").onclick = () => { $("view-standing").hidden = false; $("view-swap").hidden = true; $("tab-standing").classList.add("on"); $("tab-swap").classList.remove("on"); };
-$("tab-swap").onclick = () => { $("view-standing").hidden = true; $("view-swap").hidden = false; $("tab-swap").classList.add("on"); $("tab-standing").classList.remove("on"); };
-$("go-swap-2").onclick = () => $("tab-swap").click();
+$("connect").onclick = connectSafely;
+const showTab = (swap) => {
+  $("view-standing").hidden = swap; $("view-swap").hidden = !swap;
+  $("tab-swap").classList.toggle("on", swap); $("tab-standing").classList.toggle("on", !swap);
+};
+$("tab-standing").onclick = () => showTab(false);
+$("tab-swap").onclick = () => showTab(true);
+$("go-swap-2").onclick = () => showTab(true);
 $("amount").oninput = refreshOrder;
 $("split").onchange = refreshOrder;
 $("execute").onclick = () => doSwap(true);
 $("execute-unsigned").onclick = () => doSwap(false);
+
+// Presets sized from the live allowance. Without them the fill, the meter and the unsigned path
+// each need an amount a visitor has no way to guess — three of the four headline behaviours.
+function setAmount(wei) {
+  $("amount").value = ethers.formatUnits(wei, dec0).replace(/\.0$/, "");
+  refreshOrder();
+}
+$("p-fill").onclick = () => { $("split").checked = false; setAmount(allowanceWei / 2n); };
+$("p-exceed").onclick = () => { $("split").checked = false; setAmount(allowanceWei + allowanceWei / 10n); };
+$("p-split").onclick = () => { $("split").checked = true; setAmount(allowanceWei + allowanceWei / 2n); };
+
 $("faucet").onclick = async () => {
-  if (!me) { await connect(); if (!me) return; }
+  clearStatus();
+  if (!me) { await connectSafely(); if (!me) return; }
   const btn = $("faucet");
   const label = btn.textContent;
-  btn.disabled = true; btn.textContent = "Minting…";
+  lock(true); btn.textContent = "Minting…";
   try {
-    // Enough to swap above the cap and watch it bind, which is the point of the page.
-    const tx = await token0.mint(me, ethers.parseUnits("500000", dec0));
-    await tx.wait();
+    const amount = ethers.parseUnits("500000", dec0);
+    const tx = await token0.mint(me, amount);
+    setStatus("Minting demo tokens", "Waiting for Sepolia to include the transaction.",
+      `<a href="${D.explorer}/tx/${tx.hash}" target="_blank" rel="noopener">view on Etherscan</a>`);
+    await withTimeout(tx.wait(), 180000, "the mint transaction");
     await refreshStanding();
+    // The only other feedback lives on the hidden Swap tab, so say it here.
+    setStatus("Demo tokens received", `500,000 ${sym0} minted to ${short(me)}.`, "you can now swap on the Swap tab");
   } catch (e) {
-    showConstraint(explain(e));
+    const x = explain(e);
+    setStatus(x.label, x.body, x.detail);
   } finally {
-    btn.disabled = false; btn.textContent = label;
+    btn.textContent = label; lock(false);
   }
 };
 
-boot().catch((e) => console.error(e));
+// A wallet that switches account or chain silently invalidates every cached signer and contract.
+if (window.ethereum && window.ethereum.on) {
+  window.ethereum.on("accountsChanged", () => window.location.reload());
+  window.ethereum.on("chainChanged", () => window.location.reload());
+}
+
+boot().catch((e) => {
+  console.error(e);
+  setStatus("Could not load the app",
+    (e && e.message) || String(e),
+    "the contract addresses and pool config could not be read — try reloading, or check the network");
+});
 </script>
 </body>
 </html>

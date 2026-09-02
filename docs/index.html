@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+  *, *::before, *::after { box-sizing: border-box; }
   body { margin:0; background:oklch(0.94 0.014 82); overflow-x:hidden; }
   a { color:oklch(0.2 0.012 60); text-decoration:none; }
   a:hover { color:oklch(0.55 0.14 48); }
@@ -50,7 +51,7 @@
 
     <div style="position:relative;">
       <div style="position:relative; height:30px;">
-        <div class="mono" style="position:absolute; left:93.75%; bottom:8px; transform:translateX(-88%); font-size:11px; letter-spacing:0.1em; color:oklch(0.55 0.14 48); white-space:nowrap;">9,375 BPS · ONE REAL ADDRESS</div>
+        <div class="mono" style="position:absolute; left:93.75%; bottom:8px; transform:translateX(-100%); max-width:96vw; font-size:11px; letter-spacing:0.1em; color:oklch(0.55 0.14 48); white-space:nowrap;">9,375 BPS · ONE REAL ADDRESS</div>
       </div>
       <div style="position:relative; height:26px;">
         <div style="position:absolute; left:0; right:0; top:0; height:1px; background:oklch(0.2 0.012 60);"></div>
@@ -58,13 +59,13 @@
         <div style="position:absolute; left:0; right:0; top:1px; height:18px; background-image:repeating-linear-gradient(to right, oklch(0.42 0.014 70) 0 1px, transparent 1px 10%);"></div>
         <div style="position:absolute; left:93.75%; top:-14px; height:38px; width:3px; background:oklch(0.55 0.14 48);"></div>
       </div>
-      <div class="mono" style="display:flex; justify-content:space-between; gap:20px; padding:8px 4vw 0; font-size:10px; letter-spacing:0.16em; color:oklch(0.48 0.014 70); white-space:nowrap;">
+      <div class="mono" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 20px; padding:8px 4vw 0; font-size:10px; letter-spacing:0.16em; color:oklch(0.48 0.014 70);">
         <span>0 · ONE DIRECTION</span>
         <span>TWO-SIDED · 10,000</span>
       </div>
       <div style="padding:12px 4vw 0; font-size:12.5px; line-height:1.6; color:oklch(0.44 0.014 68); max-width:66ch;">
         17 buys, 15 sells across 32 real mainnet swaps: 2&nbsp;&times;&nbsp;min(buys,&nbsp;sells)&nbsp;&divide;&nbsp;total.
-        Proven by the circuit rather than asserted &mdash; reproduce it with
+        Proven by the circuit off-chain rather than asserted &mdash; reproduce it with
         <span class="mono" style="font-size:11.5px;">npm run prove -- balanced</span>.
       </div>
 
@@ -92,7 +93,7 @@
   </div>
 
   <div id="mechanism" style="border-top:1px solid oklch(0.2 0.012 60); background:oklch(0.2 0.012 60); color:oklch(0.94 0.014 82);">
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); padding:0 4vw;">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(190px, 100%), 1fr)); padding:0 4vw;">
       <div style="padding:36px 26px 42px 0;">
         <div class="mono" style="font-size:11px; color:oklch(0.78 0.13 55);">01</div>
         <div style="font-size:16px; font-weight:300; margin-top:16px; line-height:1.4;">You prove your own history.</div>
@@ -103,7 +104,7 @@
       </div>
       <div style="padding:36px 26px 42px; border-left:1px solid oklch(0.34 0.012 60);">
         <div class="mono" style="font-size:11px; color:oklch(0.78 0.13 55);">03</div>
-        <div style="font-size:16px; font-weight:300; margin-top:16px; line-height:1.4;">Standing is recorded in the registry.</div>
+        <div style="font-size:16px; font-weight:300; margin-top:16px; line-height:1.4;">Standing is recorded in the registry.<br><span style="font-size:13px; color:oklch(0.78 0.13 55);">today: operator-written &mdash; see below</span></div>
       </div>
       <div style="padding:36px 26px 42px; border-left:1px solid oklch(0.34 0.012 60);">
         <div class="mono" style="font-size:11px; color:oklch(0.78 0.13 55);">04</div>
@@ -118,16 +119,19 @@
     <div style="border-top:1px solid oklch(0.34 0.012 60); padding:26px 4vw; font-size:13px; line-height:1.75; color:oklch(0.8 0.012 74); max-width:90ch;">
       <strong style="font-weight:500; color:oklch(0.94 0.014 82);">What is and is not live.</strong>
       The hook and registry are deployed on Sepolia, and the circuit proves standing locally, verified
-      against its verifying key. Brevis&rsquo; on-chain proof delivery is retired, so no proof has landed
-      on any chain &mdash; standing here is written by the operator registry, the second trust model behind
-      the same interface. Stated plainly because the app states it too.
+      against its verifying key. The on-chain delivery is the part that did not complete: our first
+      failure was <em style="font-style:normal; color:oklch(0.94 0.014 82);">our own</em> stale SDK pin,
+      five releases below Brevis&rsquo; documented minimum. With that fixed the gateway accepts and prices
+      our query, we paid the fee on Sepolia, and it reached <span class="mono">QS_PAID</span> &mdash; then
+      no callback arrived in the 47 minutes we watched. So no proof has landed on any chain, and standing
+      here is written by the operator registry, the second trust model behind the same interface.
     </div>
 
     <div class="mono" style="border-top:1px solid oklch(0.34 0.012 60); padding:18px 4vw; display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:oklch(0.68 0.012 70);">
       <span>Tenure</span>
       <span style="display:flex; gap:18px; flex-wrap:wrap;">
         <a href="https://sepolia.etherscan.io/address/0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080" style="color:oklch(0.78 0.13 55);">Hook 0x8878&hellip;0080</a>
-        <a href="https://sepolia.etherscan.io/address/0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5" style="color:oklch(0.78 0.13 55);">Registry 0x03F0&hellip;19B5</a>
+        <a href="https://sepolia.etherscan.io/address/0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA" style="color:oklch(0.78 0.13 55);">Standing registry 0x2fA2&hellip;9AaA</a>
         <a href="https://github.com/Manuel-dev01/tenure-hook" style="color:oklch(0.78 0.13 55);">Source</a>
       </span>
     </div>
