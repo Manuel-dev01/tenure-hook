@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/brevis-network/brevis-sdk/sdk"
 	"github.com/ethereum/go-ethereum/common"
@@ -92,13 +93,30 @@ func runBalance(t *testing.T, trader string, swaps []mockSwap) (addr common.Addr
 	// NewGatewayClient dial with INSECURE credentials (gateway_client.go), which cannot reach the
 	// real TLS gateway. NewBrevisAppWithConfig with an empty GatewayUrl is the one path that both
 	// avoids the panic and keeps TLS.
-	app, err := sdk.NewBrevisAppWithConfig(&sdk.BrevisAppConfig{
-		SrcChainId: 1,
-		RpcUrl:     rpc,
-		OutDir:     t.TempDir(),
-	})
+	//
+	// RETRIED, AND SKIPPED RATHER THAN FAILED IF THE GATEWAY IS UNREACHABLE. From v0.3.17 the SDK
+	// fetches per-chain dummy input commitments from Brevis at construction, so this arithmetic test
+	// acquired a dependency on an external service it does not otherwise need. A transient gRPC
+	// error was turning a correct circuit into a red build. Three attempts, then a loud skip naming
+	// the cause: this test asserts arithmetic, and "we could not reach Brevis" is not evidence about
+	// arithmetic in either direction.
+	var app *sdk.BrevisApp
+	var err error
+	for attempt := 1; attempt <= 3; attempt++ {
+		app, err = sdk.NewBrevisAppWithConfig(&sdk.BrevisAppConfig{
+			SrcChainId: 1,
+			RpcUrl:     rpc,
+			OutDir:     t.TempDir(),
+		})
+		if err == nil {
+			break
+		}
+		t.Logf("NewBrevisAppWithConfig attempt %d/3 failed: %v", attempt, err)
+		time.Sleep(time.Duration(attempt) * 2 * time.Second)
+	}
 	if err != nil {
-		t.Fatalf("NewBrevisAppWithConfig: %v", err)
+		t.Skipf("cannot reach the Brevis gateway to build circuit input, so the arithmetic could "+
+			"not be exercised. This is not a circuit failure. Last error: %v", err)
 	}
 	pool := common.HexToAddress(poolAddr)
 	traderAddr := common.HexToAddress(trader)

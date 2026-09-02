@@ -2,9 +2,10 @@
 pragma solidity ^0.8.26;
 
 /// @notice App base that only accepts ZK-attested results.
-/// @dev VENDORED from Brevis, `brevis/contracts/contracts/lib/BrevisAppZkOnly.sol`, unmodified
-///      except for the pragma and this comment. Reproduced here so the Foundry build does not
-///      depend on the Hardhat project's dependency tree. Credit: Brevis Network (MIT).
+/// @dev VENDORED from Brevis, `contracts/contracts/lib/BrevisAppZkOnly.sol` in
+///      https://github.com/brevis-network/brevis-quickstart-ts, unmodified except for the
+///      pragma and this comment. Reproduced here so the Foundry build does not depend on that
+///      project's Hardhat dependency tree. Credit: Brevis Network (MIT).
 ///      See brevis/ATTRIBUTION.md.
 abstract contract BrevisAppZkOnly {
     address public brevisRequest;

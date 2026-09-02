@@ -8,7 +8,7 @@
 > `brevis-gateway-diagnosis.md`. Both fixtures reproduce their expected figures exactly under the
 > new SDK, which is the point of re-running them rather than assuming.
 
-**2026-08-30.** The gap recorded in the roadmap, *"the ZK round trip is proven with the example
+**2026-08-30.** The gap recorded during the build, *"the ZK round trip is proven with the example
 circuit, our circuit's computation is proven by test engine, and the two have never been joined"*, 
 **is closed.** They are now joined.
 

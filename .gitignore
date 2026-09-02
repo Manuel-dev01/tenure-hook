@@ -38,3 +38,30 @@ CLAUDE.md
 
 # gate.sh scratch output
 .gate-tmp/
+
+# ---------------------------------------------------------------------------
+# Kept locally, deliberately not part of the submission.
+#
+# analysis/ holds two kinds of file. The EVIDENCE a claim rests on is tracked and
+# linked from the README. The working records below are how we got there: planning,
+# checklists, superseded drafts, competitive checks and video preparation. They are
+# useful to us and noise to a reviewer, so they stay on disk and out of the repo.
+# ---------------------------------------------------------------------------
+analysis/roadmap.md
+analysis/submission-checklist.md
+analysis/t1-runbook.md
+analysis/progress-update-1.md
+analysis/recording-script.md
+analysis/video-script.md
+analysis/rfh-collision-check.md
+analysis/circuit-claim-decision.md
+analysis/sensitivity-preliminary.md
+analysis/design-source/
+
+# Upstream's Hardhat quickstart. Tenure does not use it, and it carried upstream's own
+# Sepolia deployment records, which read as if they were ours. The single file we need
+# is vendored at src/lib/BrevisAppZkOnly.sol. See brevis/ATTRIBUTION.md.
+brevis/contracts/
+
+# Foundry writes a timestamped copy beside run-latest.json. One record is enough.
+broadcast/**/run-[0-9]*.json

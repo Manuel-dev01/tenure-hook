@@ -94,10 +94,15 @@ fi
 if command -v go >/dev/null 2>&1; then
   # The S5 test proves the circuit computes 2*min(buys,sells)/total, checked against a figure
   # computed outside the circuit. Mutating min->max turns it red naming the cause.
-  if ( cd brevis/prover && TMPDIR= TMP= TEMP= go test ./... ) >"$TMP/demo_gotest.log" 2>&1; then
-    ok "go test ./..., circuit arithmetic verified"
-  else
+  # -v so a t.Skip is visible. Without it `go test` prints nothing for a skipped test and the
+  # package still reports ok, so an unexercised assertion would be reported here as a pass.
+  ( cd brevis/prover && TMPDIR= TMP= TEMP= go test -v ./... ) >"$TMP/demo_gotest.log" 2>&1
+  if [ $? -ne 0 ]; then
     no "go test ./... (see $TMP/demo_gotest.log)"
+  elif grep -q -- "--- SKIP: TestS5" "$TMP/demo_gotest.log"; then
+    sk "circuit arithmetic SKIPPED (gateway unreachable), not verified (see $TMP/demo_gotest.log)"
+  else
+    ok "go test ./..., circuit arithmetic verified"
   fi
 else
   sk "circuit arithmetic, go not on PATH"

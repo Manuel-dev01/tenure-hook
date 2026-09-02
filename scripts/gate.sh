@@ -52,8 +52,17 @@ if [ "$STAGE" -ge 2 ]; then
     # TMPDIR is relative here, and the go toolchain resolves it against ITS OWN working
     # directory - so after the cd it looks for brevis/prover/.gate-tmp and dies before running a
     # single test. Clear it and let go use the system default.
-    ( cd brevis/prover && TMPDIR= TMP= TEMP= go test ./... ) >"$GATE_LOG_DIR/gate_gotest.log" 2>&1
-    check $? "go test ./... green in brevis/prover (see $TMP/gate_gotest.log)"
+    # -v so a t.Skip is visible: without it `go test` prints nothing for a skipped test and the
+    # package still reports ok, so an unexercised assertion would be recorded here as a pass.
+    ( cd brevis/prover && TMPDIR= TMP= TEMP= go test -v ./... ) >"$GATE_LOG_DIR/gate_gotest.log" 2>&1
+    rc=$?
+    if [ $rc -ne 0 ]; then
+      echo "  FAIL: go test ./... in brevis/prover (see $TMP/gate_gotest.log)"; fail=1
+    elif grep -q -- "--- SKIP: TestS5" "$GATE_LOG_DIR/gate_gotest.log"; then
+      echo "  skip: circuit arithmetic SKIPPED (gateway unreachable), not verified (see $TMP/gate_gotest.log)"
+    else
+      echo "  ok:   go test ./... green in brevis/prover"
+    fi
   else
     echo "  skip: go test, go not on PATH (the S5 circuit evidence is NOT verified)"
   fi

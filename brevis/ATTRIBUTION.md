@@ -62,3 +62,14 @@ per-chain dummy input commitments that Brevis has since rotated. The full trace 
 
 `app/src/chain_scoped_request.ts` is ours: brevis-sdk-typescript 1.3.1 never sets `src_chain_id`,
 which v0.3.33 requires.
+
+## What is not in this repository
+
+`brevis/contracts/`, the quickstart's Hardhat project, is **not tracked here**. It is upstream
+scaffolding for deploying *their* example contract, Tenure does not use it, and it carried
+upstream's own Sepolia deployment records, which would have read as ours. It is available in the
+[upstream repository](https://github.com/brevis-network/brevis-quickstart-ts).
+
+The one file Tenure needs from it is vendored at `src/lib/BrevisAppZkOnly.sol`, unmodified except
+for the pragma and a provenance comment, so the Foundry build does not depend on a Hardhat
+dependency tree. That file names its origin in its own header.

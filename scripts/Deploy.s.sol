@@ -18,7 +18,7 @@ import {IStandingRegistry} from "../src/interfaces/IStandingRegistry.sol";
 ///      zero and every callback reverts until it is set. Leaving it unset does not merely disable
 ///      the registry, a misconfigured value would accept proofs from a different circuit
 ///      entirely. This script sets it and then READS IT BACK, because a deploy log is not
-///      evidence. See analysis/submission-checklist.md.
+///      evidence. A misconfigured value would accept proofs from a different circuit entirely.
 ///
 /// @dev The mined address deliberately encodes beforeSwap and nothing else. Without
 ///      BEFORE_SWAP_RETURNS_DELTA the hook is structurally incapable of altering execution
