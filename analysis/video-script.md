@@ -1,52 +1,70 @@
 # TENURE — demo video script
 
-**Hard cap 5:00. Target 4:40. Your own voice — AI narration is a binary gate failure.**
+**Hard cap 5:00. Target 4:45. Your own voice — AI narration is a binary gate failure.**
 
-Pipe the demo through `sed -n '/== Logs ==/,$p'` before recording. Decide this before the camera is
-on — the raw run prints trace noise and a `Gas used:` line above `== Logs ==`.
-
-**Filmed out of logical order.** The demo runs proofs → depth → swap → split. That is the right
-logical order and the wrong filmed order: the wow moment must land by 0:30, and it is *"same swap,
-different outcome."* So the video opens on beat **[3]** and backfills the machinery. Run the demo
-once, capture the full output, then cut the sections out of order.
+Rewritten 2026-09-02 after the Sepolia deployment. Two earlier drafts said things about Brevis that
+turned out to be false; **§0 is the current truth and supersedes anything you remember.**
 
 ---
 
-## Two corrections before recording
+## What to capture before the camera is on
 
-### 0. The Brevis limitation changed on Sep 2 — the old wording is now FALSE
+| source | use for | note |
+|---|---|---|
+| `forge script scripts/Demo.s.sol` | cold open, split beat | Deterministic, no network. Pipe through `sed -n '/== Logs ==/,$p'` — the raw run prints trace noise and a `Gas used:` line above `== Logs ==`. |
+| `forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL` | the "it's live" beat | Runs against the **deployed** Sepolia contracts. Four lines, all four green. |
+| https://manuel-dev01.github.io/tenure-hook/app.html | the "it's live" beat | Connect a wallet and let it read. **Do not execute a swap on camera.** |
 
-An earlier draft of the 3:50 section said gateway submission fails because *"Brevis routes queries
-only for registered app circuits."* **Do not say this.** It is false, and it attributes our bug to a
-sponsor's onboarding process. There is no registration step; the actual cause was that we had pinned
-`brevis-sdk` five releases below the documented minimum. The gateway now accepts our query.
+**Filmed out of logical order.** The demo runs proofs → depth → swap → split, which is the right
+logical order and the wrong filmed order: the wow must land by 0:30, and it is *"same swap,
+different outcome."* Open on demo beat **[3]** and backfill.
 
-The true statement, and the only one to say aloud, is: **the gateway accepts our proofs; we have not
-run the on-chain payment leg, so no proof has landed on a chain.** Full record in
-`analysis/brevis-gateway-diagnosis.md`.
+**On showing the app live.** Reading is safe — standing, allowance, the depth curve are all view
+calls. Executing a swap needs a wallet popup, gas, and a confirmation wait, any of which can stall
+on camera. `VerifyDemo` already proves the cap binds, and proves it more rigorously. **Show the app
+reading; show `VerifyDemo` for the proof.**
 
-If asked about it live, the honest answer is short and lands well: *"We had a stale dependency pin.
-We'd written two confident explanations for the failure before we actually traced it — both wrong."*
+---
 
+## §0 — the Brevis situation, stated correctly
 
-Every number below was re-derived from its artifact per `VERIFY.md`. All check out — but **two
-phrasings would misstate the finding aloud.** Both are in the 3:50 section.
+Two earlier drafts were wrong about this, in opposite directions. Neither wording may survive:
 
-### 1. "1.3% of that" is ambiguous and reads as wrong
+- ~~"gateway submission was unavailable — Brevis-side outage"~~ — **false.** Blames a sponsor for
+  our own bug.
+- ~~"Brevis routes queries only for registered app circuits, and we didn't complete that step"~~ —
+  **also false.** There is no registration step.
 
-Draft: *"Restraint falls on 8.8% of volume — and only 1.3% of that is one-sided flow."*
+The real cause was ours: `brevis-sdk` was pinned five releases below their documented minimum, so
+every query carried a stale constant the gateway had since rotated. Fixed.
 
-*"1.3% of that"* parses as 1.3% **of the 8.8%**, i.e. 0.11%. The real figure is 1.3% **of total
-volume**, out of the 8.8% total. Use:
+**What is true now, and the only thing to say aloud:** the gateway accepts our proof, we paid the
+fee on Sepolia, and the query reached `QS_PAID` — then stopped. It never reached `QS_PROOF_READY`,
+which is Brevis' own aggregation step. Their appsdkv3 deployment appears retired: zero events in a
+fortnight on Arbitrum, the one pair in their current docs. **So no proof has landed on any chain**,
+and standing in the app is written by the operator registry instead.
+
+If asked live, the short answer lands well:
+
+> *"We had a stale dependency pin. We'd written two confident explanations for that failure before
+> we ever traced it — both wrong. The real cause was greppable in our own dependency tree."*
+
+---
+
+## Two phrasings that would misstate a finding
+
+### 1. "1.3% of that" parses as wrong
+
+*"1.3% of that"* reads as 1.3% **of the 8.8%**, i.e. 0.11%. The real figure is 1.3% **of total
+volume**, within the 8.8%. Use:
 
 > Restraint falls on 8.8% of volume. Of that, one-sided flow is 1.3 points — the rest are addresses
 > with too little history to be measured.
 
-### 2. "below about 500,000 USDC … caps a fifth" understates it
+### 2. "below 500,000 … caps a fifth" understates our own cost
 
 `analysis/mainnet-replay.md` measures a fifth (20.8%) **at** a 500,000 tranche. *Below* that it is
-worse — 28.5% at 250,000, 42.5% at 100,000. Saying "below … a fifth" is wrong in the direction that
-flatters us. Use:
+worse — 28.5% at 250,000, 42.5% at 100,000. Use:
 
 > At a tranche of five hundred thousand USDC, base depth blocks about a fifth of long-tail swaps.
 > Below that, more.
@@ -62,6 +80,7 @@ flatters us. Use:
 | trader B balance | 0 bps | demo beat [1] / proof |
 | accessible depth A / B / unsigned | 94 / 5 / 5 units | demo beat [2] |
 | minimum sample | 20 swaps | `TenureRegistry.MIN_STANDING_SWAPS` |
+| circuit receipt budget | 32 | `directional_balance.go:43` |
 | base depth | 500 bps = 5% | `TenureHook.BASE_DEPTH_BPS` |
 | addresses clearing N=20 | 52 of 906 (5.7%) | `analysis/mainnet-replay.md` |
 | their share of volume | 92.3% | `analysis/mainnet-replay.md` |
@@ -71,6 +90,10 @@ flatters us. Use:
 | restrained volume | 8.8%, of which 1.3 points one-sided | `analysis/mainnet-replay.md` |
 | median long-tail swap | 3,563 USDC | `analysis/mainnet-replay.md` |
 | tail blocked at 500k tranche | 20.8% | `analysis/mainnet-replay.md` |
+| **Sepolia pool tranche** | **250,000** | `docs/deployments.json` |
+| **live allowance at 9,375 bps** | **235,150** | `VerifyDemo` run |
+| **live base depth** | **12,500** | `VerifyDemo` run |
+| **hook address suffix** | **`0080`** | `beforeSwap` only, no return-delta bit |
 
 ---
 
@@ -94,7 +117,7 @@ lands.
 
 ---
 
-## 0:25 – 1:00 — Fee parity, and why it's structural
+## 0:25 – 0:55 — Fee parity, and why it's structural
 
 **On screen:** `test_FeeParity_HookHoldsNoFeePermission` passing, then the mined address bits.
 
@@ -102,11 +125,12 @@ lands.
 > mined without the `BEFORE_SWAP_RETURNS_DELTA` permission bit, so it has no ability to alter
 > execution economics at all.
 >
-> The hook doesn't decline to change your fee. It can't.
+> The hook doesn't decline to change your fee. It can't. The deployed address ends in double-oh-
+> eight-oh, and you can check that yourself.
 
 ---
 
-## 1:00 – 1:50 — Where standing comes from
+## 0:55 – 1:40 — Where standing comes from
 
 **On screen:** demo beat [1], then the two fixtures.
 
@@ -121,11 +145,11 @@ lands.
 >
 > Standing requires at least twenty swaps. That number was solved for, not picked — below twenty, a
 > single additional trade moves the metric more than the depth curve can resolve. The derivation is
-> in the repo, written before we ran any numbers at any threshold.
+> in the repo, written before we ran any numbers.
 
 ---
 
-## 1:50 – 2:20 — The split attack
+## 1:40 – 2:10 — The split attack
 
 **On screen:** demo beat [4].
 
@@ -140,7 +164,26 @@ lands.
 
 ---
 
-## 2:20 – 3:05 — How this compares
+## 2:10 – 2:50 — It's live, and the cap binds on-chain
+
+**On screen:** the app reading standing and allowance, then the four `VerifyDemo` lines.
+
+**This beat is new and it is the strongest evidence in the video.** Do not rush it.
+
+> This isn't a local demo. The hook, a router and a pool are deployed on Sepolia, and there's a
+> front end you can open and connect a wallet to.
+>
+> A script asserts four things against those deployed contracts. A swap inside the allowance fills.
+> A swap over it reverts. Two legs in one transaction accumulate, and the second one reverts. And an
+> unsigned swap still executes, at base depth.
+>
+> Each is matched by the specific error the hook raises — not by "something reverted". A swap can
+> fail for a dozen reasons that have nothing to do with depth, and a test that only checked for
+> failure would pass for every one of them.
+
+---
+
+## 2:50 – 3:30 — How this compares
 
 **On screen:** a still, no terminal.
 
@@ -160,12 +203,11 @@ This is the **Original Idea** criterion — 30%, the largest weight — answered
 > The fee never moves.
 
 **Tone on the last line.** That idea is published under Anirudh Pai of Dragonfly, who may be on the
-panel. Naming it and drawing the contrast is right — it pre-empts the collapse rather than hoping
-nobody makes it. Deliver it **neutrally, as a distinction**, never as criticism of a published idea.
+panel. Deliver it **neutrally, as a distinction**, never as criticism.
 
 ---
 
-## 3:05 – 3:50 — Evidence on real traffic
+## 3:30 – 4:05 — Evidence on real traffic
 
 **On screen:** the distribution chart.
 
@@ -179,35 +221,32 @@ nobody makes it. Deliver it **neutrally, as a distinction**, never as criticism 
 
 ---
 
-## 3:50 – 4:25 — What it costs, and what we don't claim
+## 4:05 – 4:40 — What it costs, and what we don't claim
 
 **On screen:** the 8.8% decomposition table.
 
-**Deliver this at the same pace and tone as the evidence section. Do not apologise.** The content is
-unusual enough that flat delivery reads as rigour; hedged delivery reads as weakness. You are likely
-the only entrant who declines to claim a benefit, and this is the beat most likely to be repeated in
-the judging room.
+**Deliver this at the same pace as the evidence section. Do not apologise.** Flat delivery reads as
+rigour; hedged delivery reads as weakness. You are likely the only entrant who declines to claim a
+benefit, and this is the beat most likely to be repeated in the judging room.
 
 > Restraint falls on 8.8% of volume. Of that, one-sided flow is 1.3 points — the rest are addresses
-> with too little history to be measured. Their only characteristic is being new. That's the price
-> of requiring evidence before granting depth, and an operator who sets the tranche too low makes it
-> worse: at a tranche of five hundred thousand USDC, base depth blocks about a fifth of long-tail
-> swaps. Below that, more.
+> with too little history to be measured. That's the price of requiring evidence before granting
+> depth, and an operator who sets the tranche too low makes it worse: at a tranche of five hundred
+> thousand USDC, base depth blocks about a fifth of long-tail swaps. Below that, more.
 >
 > We do not claim this improves LP outcome. A closed simulation can't know where price goes after
 > informed flow, and any reference price we picked would determine the sign of the result. The
 > sensitivity is published instead.
 >
-> Also disclosed: our proof fixtures come from a pre-Pectra block range, because the SDK version we
-> started on couldn't parse EIP-7702 transactions. And while the Brevis gateway accepts our proofs,
-> we haven't run the on-chain payment leg — so no proof has landed on a chain yet. Everything you
-> saw was proven and verified locally.
+> And the ZK path isn't fully live. The circuit proves standing, and the proof verifies — but
+> Brevis' on-chain delivery is retired, so no proof has landed on a chain. Standing in the app is
+> operator-written, and the app says so in a banner rather than letting you find out.
 
 ---
 
-## 4:25 – 4:40 — Close
+## 4:40 – 4:55 — Close
 
-**On screen:** demo's final two lines.
+**On screen:** the demo's final two lines.
 
 > The cap binds. It can't be split around. The fee never moved.
 >
@@ -217,30 +256,62 @@ the judging room.
 
 ## Timing — measured, not estimated
 
-578 spoken words across all sections.
+**715 spoken words**, counted from the quoted blocks in the timed beats:
+
+```
+python - <<'EOF'
+import re
+s=open('analysis/video-script.md',encoding='utf-8').read()
+b=s[s.index('## 0:00'):s.index('## Timing')]
+print(len(' '.join(l[2:] for l in b.split('\n') if l.startswith('> ')).split()))
+EOF
+```
 
 | pace | runtime |
 |---|---|
-| 140 wpm (deliberate) | **4:07** |
-| 150 wpm (normal technical) | 3:51 |
-| 160 wpm (brisk) | 3:36 |
+| 140 wpm (deliberate) | **5:06 — OVER THE CAP** |
+| 150 wpm (normal technical) | **4:46** |
+| 160 wpm (brisk) | 4:28 |
 
 Plus the two-second pause at 0:22 and whatever the on-screen beats need.
 
-**You have more headroom than the 4:40 target suggests.** Spend it on the pause, on slowing the
-comparison section at 2:20, and on not rushing the limitations at 3:50 — those are the two beats
-where pace does the most work. Do not spend it adding content.
+**The Sepolia beat consumed the margin.** At the deliberate pace this script no longer fits, and
+recording long fails a binary gate. Two options:
+
+**1. Record at 150 wpm.** Ordinary technical delivery, not rushed. 4:46 leaves ~14 seconds for the
+pause and the beat transitions. Viable, but there is no room for a slow sentence.
+
+**2. Cut 47 words and keep 140 wpm** → 4:46 with the same headroom, delivered more slowly. The four
+passages below are the most expendable in the script; each is a line the repo already makes in
+writing:
+
+| beat | cut | words |
+|---|---|---|
+| 0:25 | *"The deployed address ends in double-oh-eight-oh, and you can check that yourself."* | 12 |
+| 0:55 | *"The derivation is in the repo, written before we ran any numbers."* | 12 |
+| 2:50 | *"We're aware of one adjacent idea… The fee never moves."* | 20 |
+| 3:30 | *"Swap-weighted: 5,984."* | 3 |
+
+Cutting the 2:50 line is the only one with a real cost: it pre-empts the loyalty-pricing collapse
+out loud rather than hoping nobody makes the connection. Cut the other three first.
+
+**Do not cut the limitations beat.** It is the credibility of the whole submission, and it is the
+passage most likely to be repeated in the judging room.
+
+Do not spend any recovered margin adding content.
 
 ## Recording notes
 
 - **Record twice minimum.** The first take finds the two or three sentences you can't say out loud.
-  Re-read those, then take two.
-- The 20-second margin against the 5:00 cap is deliberate. **Recording long fails a binary gate.**
+- The margin against 5:00 is deliberate. **Recording long fails a binary gate.**
+- Rehearse three answers: *why not a fee dial*, *why not a whitelist*, *why this metric*.
 
 ## Before you upload
 
 - [ ] Length under 5:00 — **check the file, not your memory**
 - [ ] Your own voice throughout, no AI narration
-- [ ] Every number spoken re-derived from the artifact, not copied from the README
+- [ ] Every number spoken re-derived from its artifact, not from the README
+- [ ] Nothing said about Brevis beyond §0
+- [ ] The app was shown **reading**, not executing
 - [ ] Plays logged-out
 - [ ] Repo link points to `main`
