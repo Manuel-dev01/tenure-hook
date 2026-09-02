@@ -1,5 +1,13 @@
 # The production circuit, proven end to end
 
+> **SUPERSEDED IN PART, 2026-09-02.** Every figure below has been re-measured against
+> **brevis-sdk v0.3.33**; the table now carries the new numbers. The figures originally recorded
+> here were produced under v0.3.12, whose vk hash was
+> `0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b` at 1,583,108 constraints.
+> **Do not use that value for `setVkHash`.** Why the SDK moved, and what it unblocked, is in
+> `brevis-gateway-diagnosis.md`. Both fixtures reproduce their expected figures exactly under the
+> new SDK, which is the point of re-running them rather than assuming.
+
 **2026-08-30.** The gap recorded in the roadmap — *"the ZK round trip is proven with the example
 circuit, our circuit's computation is proven by test engine, and the two have never been joined"* —
 **is closed.** They are now joined.
@@ -12,13 +20,13 @@ reference, and its setup stays cached, so the T1a gate evidence remains reproduc
 
 | | production circuit | example circuit (T1a) |
 |---|---|---|
-| constraints | **1,583,108** | 857,942 |
+| constraints | **1,601,003** | 857,942 |
 | public / secret | 6 / 1091 | 6 / 1089 |
 | Lagrange size | 2²¹ = 2,097,152 | 2²⁰ = 1,048,576 |
-| setup time | **16.4 s** | 13.6 s |
+| setup time | **2 m 42.7 s** (cold SRS load) | 13.6 s |
 | proving key | 134,252,200 bytes | 67,143,336 bytes |
-| circuit digest | `0x871ee23536ab098ff35622c13fec9af3c44606cbf28dc26dd1840018d326b2e5` | `0x0e299aa2…` |
-| **vk hash** | **`0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b`** | `0x1cb76a97…` |
+| circuit digest | `0x0d0d4ebe86cc9ec341bc9b98d94d52bc9b7bfbe67be97ae75a3e71e8f5cd8baa` | `0x0e299aa2…` |
+| **vk hash** | **`0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8`** | `0x1cb76a97…` |
 
 **That vk hash is the value `setVkHash` takes.** Until now there was none, so the registry's
 `_vkHash` check could not be configured for the real circuit.
@@ -34,8 +42,8 @@ Receipts are genuine Uniswap V3 `Swap` logs from the **pinned pre-Pectra range**
 
 | fixture | trader | buys / sells | expected | **circuit output** | swaps | attested window | prove time |
 |---|---|---|---|---|---|---|---|
-| balanced | `0x0f4a1d7f…77eca3` | 17 / 15 | 9375 bps | **9375 bps** | 32 | 21126338–21144863 | 114.3 s |
-| one-sided | `0x308c6fbd…d75e2a6` | 29 / 0 | 0 bps | **0 bps** | 29 | 21126236–21145773 | 96.9 s |
+| balanced | `0x0f4a1d7f…77eca3` | 17 / 15 | 9375 bps | **9375 bps** | 32 | 21126338–21144863 | 176.0 s |
+| one-sided | `0x308c6fbd…d75e2a6` | 29 / 0 | 0 bps | **0 bps** | 29 | 21126236–21145773 | 56.8 s |
 
 Proof size 936 bytes in both cases.
 

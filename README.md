@@ -203,13 +203,19 @@ sufficiency, which separates *measured* from *not yet measured* rather than good
 
 ### Known limitation: proofs run against a historical block range
 
-`brevis-sdk v0.3.12` cannot build receipt proofs for blocks containing **EIP-7702 (type 4)**
+`brevis-sdk v0.3.12` could not build receipt proofs for blocks containing **EIP-7702 (type 4)**
 transactions, which are present in current mainnet blocks. Measured, not assumed: the failing range
 carried 12 type-4 transactions, the pinned range zero. Blob transactions are *not* the problem — they
 appear in the working range too.
 
-Proofs are therefore generated against a pinned pre-Pectra range, anchored at block **21,146,236**.
+The fixtures are therefore cut from a pinned pre-Pectra range, anchored at block **21,146,236**.
 See [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md).
+
+**This constraint is probably now lifted and we are not claiming it.** The upgrade to
+`brevis-sdk v0.3.33` pins a go-ethereum fork that does parse type 4
+(`core/types/transaction.go`, `SetCodeTxType = 0x04`). We have not re-cut the fixtures against a
+post-Pectra range, so the pinning stands as a property of *these fixtures*, not of the SDK. Stated
+this way round because an untested capability is not a result.
 
 ---
 
@@ -218,20 +224,77 @@ See [`analysis/pinned-proving-range.md`](analysis/pinned-proving-range.md).
 | Gate | Question | Status |
 |---|---|---|
 | **T1a** | Does local Brevis proving work — compile, key-gen, prove, verify? | **PASS** |
-| **T1b** | Does gateway submission reach Sepolia? | **No — and the reason is ours, not theirs.** The gateway is reachable and rejects the query with `invalid app circuit ... dummy input commitment`: an app circuit must be registered with Brevis before the gateway will route it, and we did not complete that step. **Not a gate** — deployment is not required by the rules |
+| **T1b** | Does gateway submission work? | **PASS.** The gateway accepts the query and returns a query key. It previously rejected it, and our first two written explanations for that were both wrong — see below |
 | **T2** | Can the hook bind a swap to a trader unforgeably, and fail closed? | **PASS** — 10/10 |
 
 The gate was closed with an example circuit. **The production circuit has since been wired and
 proven in its own right:**
 
 ```
-circuit digest  0x871ee23536ab098ff35622c13fec9af3c44606cbf28dc26dd1840018d326b2e5
-vk hash         0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b
-constraints     1,583,108        setup 16.4s        proving ~100s
+circuit digest  0x0d0d4ebe86cc9ec341bc9b98d94d52bc9b7bfbe67be97ae75a3e71e8f5cd8baa
+vk hash         0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8
+constraints     1,601,003        setup 2m43s        proving 57-176s
 ```
 
 That vk hash is the value `setVkHash` takes; the deploy script reads it back and reverts on
 mismatch.
+
+### The gateway rejection, and two wrong explanations of it
+
+Worth reading if you assess how a team handles its own errors.
+
+Gateway submission failed for a week with `invalid app circuit chain 1 dummy input commitment
+0x127d5d80...`. We explained it twice, in writing, without tracing it: first as *"a Brevis-side
+outage"*, then as *"our app circuit is not registered with Brevis"*. **Both were false**, and the
+first blamed a sponsor for our own bug.
+
+`0x127d5d80...` turned out to be a **string constant in the SDK version we had pinned**
+(`brevis-sdk@v0.3.12/common/const.go:3`). The live gateway expects a different value and serves it
+over an RPC; v0.3.17+ fetches it instead of hard-coding it, and Brevis document 0.3.17 as the
+minimum — *"It is not backward-compatible."* We were five releases below a documented floor.
+
+Upgrading to v0.3.33 fixes it, changes no circuit, hook or contract logic, and both fixtures below
+reproduce their expected figures exactly. Full record, including the deploy sequence and the exact
+`sendRequest` signature, in
+[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
+
+### Deployed to Sepolia — paid, accepted, not fulfilled
+
+Run end to end on 2026-09-02, and reported as measured rather than as intended.
+
+| step | result |
+|---|---|
+| `TenureRegistry` deployed | [`0x03F05F1c…af19B5`](https://sepolia.etherscan.io/address/0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5) — `expectedVkHash()` read back from chain |
+| `TenureHook` deployed | [`0x8878dbEB…6D0080`](https://sepolia.etherscan.io/address/0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080) — address ends `0080`, `BEFORE_SWAP` only |
+| fee quoted | `"0"` — a populated string, not an unset field (that would be `""` and fail to parse) |
+| `sendRequest` paid | [`0xd5f1a81b…06fb47`](https://sepolia.etherscan.io/tx/0xd5f1a81ba9a7277525dd79ec353d30ea06248fdbcbda946f56826b6ae406fb47) — status 1, `RequestSent` with the registry as callback target |
+| gateway status | **`QS_PAID`**, holding the correct circuit output, for 47 minutes / 567 blocks |
+| `brevisCallback` | **never fired.** `standing()` is still zero |
+
+The output the gateway holds decodes byte-for-byte to the one-sided fixture — trader
+`0x308c6fbd…`, 0 bps, 29 swaps, blocks 21126236–21145773 — so the proof itself is correct and ready.
+
+**Why this is not an integration bug on our side.** The gateway's own state machine locates the
+failure: `QS_TO_BE_PAID -> QS_PAID -> QS_PROOF_READY -> QS_COMPLETE`, and the query sits at
+**`QS_PAID`**. Reaching `QS_PAID` means Brevis *matched our on-chain payment to our query*, so the
+proofId, nonce, callback target, callback gas and fee were all correct — confirmed by the
+counterparty, not asserted by us. The step that never ran is `QS_PROOF_READY`: their aggregation.
+
+The service is also dormant. In the last 50,000 Sepolia blocks (~7 days) the BrevisRequest contract
+has exactly **one** event — ours. On **Arbitrum One**, the one pair in Brevis' current docs, its
+BrevisRequest has **zero** events in 5,000,000 blocks (~14 days), while control queries on the same
+endpoint return 2,050 WETH events in 2,000 blocks. Brevis have since moved to ProverNet and the Pico
+stack; this appsdkv3 deployment appears retired.
+
+Each plausible fault on our side was checked against the SDK source and eliminated — silent
+`submitProof` failure, call ordering, the `option` enum, and `use_callback` (hard-coded `true` in
+`prover/utils.go:57`). Full elimination table in the diagnosis doc.
+
+**The claim stops where the evidence does: no proof has landed on any chain, and no change to this
+repo would alter that.**
+
+Full trace, with the exact `sendRequest` signature and every hash, in
+[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
 
 ### The proof is verified by two fixtures, not one
 

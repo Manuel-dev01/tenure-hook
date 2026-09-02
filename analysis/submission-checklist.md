@@ -15,7 +15,11 @@ The manual wording is kept so the check survives the script being wrong.
 - [ ] *(auto)* no dynamic-fee machinery in `src/`
 - [ ] *(auto)* hook declares `beforeSwapReturnDelta: false`
 - [ ] *(auto)* circuit contains no price/oracle reference
-- [ ] CI green on the pushed commit
+- [ ] CI green on the pushed commit — **open the Actions tab and look.** This was ticked from
+      memory while `main` had been red for four consecutive commits: `forge build --sizes` was
+      failing because the demo harness exceeds EIP-170, which is expected for a contract that is
+      never deployed and was never scoped out. A claim about CI is checkable in one click by
+      anyone, including a judge.
 
 Line items, not runbook steps. Each is something that can be silently skipped in a rush and cost
 either the submission or a question on stage. Tick nothing from memory.
@@ -24,15 +28,21 @@ either the submission or a question on stage. Tick nothing from memory.
 
 ## Security
 
-**Deployment is NOT required by the rules, and as of Aug 30 nothing is deployed** — the Brevis
-gateway will not route our unregistered app circuit. Pick a path and tick the matching block. Do not leave the
-deployed-only items unticked and unexplained; an empty checkbox reads as an omission.
+**Deployment is NOT required by the rules, and as of Sep 2 nothing is deployed.** The reason is no
+longer technical: as of 2026-09-02 the Brevis gateway **accepts** our query and returns a query key
+(`analysis/brevis-gateway-diagnosis.md`). What remains is the on-chain leg — deploy the registry,
+`setVkHash`, pay `BrevisRequest.sendRequest`, receive the callback. Pick a path and tick the
+matching block. Do not leave the deployed-only items unticked and unexplained; an empty checkbox
+reads as an omission.
 
 ### Path A — not deployed (current default)
 
-- [ ] The README and video state plainly that **gateway submission is not wired** because the app
-      circuit is not registered with Brevis, and that proofs are therefore **generated and verified
-      locally**. Do not attribute it to a sponsor outage.
+- [ ] The README and video state plainly that **the gateway accepts the query but no proof has
+      landed on-chain**, because the paid `sendRequest` leg was not run. Proofs are generated and
+      verified locally.
+      *Do NOT say this is an outage, and do NOT say the circuit needs registering with Brevis.
+      Both were written into this repo previously and both were false; the real cause was a stale
+      `brevis-sdk` pin, now fixed.*
 - [ ] `scripts/Deploy.s.sol` demonstrates the correct `setVkHash` sequence *including the readback*,
       so the security property is legible in code even though no deployment exists.
 - [ ] `TenureRegistryTest` covers `_vkHash` rejection and callback authorisation — the guarantees
@@ -41,7 +51,9 @@ deployed-only items unticked and unexplained; an empty checkbox reads as an omis
 ### Path B — if a deployment happens before submission
 
 - [ ] **`setVkHash` has been called and `vkHash()` reads back
-      `0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b`.**
+      `0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8`.**
+      *This value changed on 2026-09-02 with the brevis-sdk v0.3.33 upgrade. The old
+      `0x028f783f…` is dead and would reject every real proof.*
       `vkHash` initialises to `bytes32(0)`. `handleProofResult` does
       `require(vkHash == _vkHash, "invalid vk")` — with `vkHash` unset, that check accepts **only**
       a zero hash, and a misconfiguration means proofs from an arbitrary circuit could drive our
@@ -78,11 +90,15 @@ deployed-only items unticked and unexplained; an empty checkbox reads as an omis
 
 ## Disclosures — every one of these must appear in the README AND on camera
 
-- [ ] **EIP-7702 block pinning.** `brevis-sdk v0.3.12` cannot parse type-4 transactions, so proofs
-      use a historical range (anchor 21146236). Blob txs are *not* the cause; type 4 alone is.
+- [ ] **EIP-7702 block pinning.** `brevis-sdk v0.3.12` could not parse type-4 transactions, so the
+      fixtures use a historical range (anchor 21146236). Blob txs are *not* the cause; type 4 alone
+      is. v0.3.33 pins a geth fork that does parse type 4, so this is probably lifted — but the
+      fixtures were never re-cut, so **do not claim it is fixed**.
 - [ ] ~~The production circuit has no vk hash~~ **RESOLVED.** Circuit is wired; vk hash is
-      `0x028f783f8de9ae97f93c69536bcc9227fc91cdbd809bef15a8b1a1f2414e3b0b`. **This is the value
+      `0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8`. **This is the value
       `setVkHash` takes** — read `vkHash()` back after deploying to confirm.
+      *Superseded value: `0x028f783f…` (brevis-sdk v0.3.12). Dead — see
+      `analysis/brevis-gateway-diagnosis.md`.*
 - [ ] **Router-batched unsigned users share one per-transaction bucket.** Escapable free by signing
       a zero-standing credential.
 - [ ] **Cross-transaction splitting within a block still evades the cap.**
@@ -93,12 +109,15 @@ deployed-only items unticked and unexplained; an empty checkbox reads as an omis
       Median long-tail swap is 3,563 USDC.
       *Do not say "below 500,000 … a fifth" — that understates our own cost, and it is the phrasing
       a judge with the repo open would check.*
-- [ ] **Gateway submission does not work, and the cause is ours.** The gateway is up; it rejects
-      our query with `invalid app circuit chain 1 dummy input commitment 0x127d5d80...`, because an
-      app circuit must be registered with Brevis before the gateway will route it. **Do not call
-      this an outage.** Proofs are generated and verified locally instead.
-      *An earlier `RST_STREAM` against the upstream EXAMPLE circuit may genuinely have been a
-      transient outage; the two were conflated. Only the registration finding is substantiated.*
+- [ ] **Gateway submission works.** It failed for a week and we published two wrong explanations
+      before tracing it: `0x127d5d80...` in `invalid app circuit chain 1 dummy input commitment
+      0x127d5d80...` was a **string constant in our own pinned SDK** (`brevis-sdk@v0.3.12
+      common/const.go:3`), not an identifier Brevis assigned us. v0.3.17+ fetches the value from
+      the gateway; Brevis document 0.3.17 as the minimum. Upgrading to v0.3.33 fixed it.
+      **Never call it an outage and never say the circuit needed registering.**
+- [ ] **The on-chain leg is untested and must be described as such.** The gateway accepting a query
+      proves routing, not fulfilment. Say "no proof has landed on any chain", not "the ZK path is
+      live end to end".
 
 ## Claims discipline
 

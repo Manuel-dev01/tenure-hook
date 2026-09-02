@@ -14,6 +14,21 @@ once, capture the full output, then cut the sections out of order.
 
 ## Two corrections before recording
 
+### 0. The Brevis limitation changed on Sep 2 — the old wording is now FALSE
+
+An earlier draft of the 3:50 section said gateway submission fails because *"Brevis routes queries
+only for registered app circuits."* **Do not say this.** It is false, and it attributes our bug to a
+sponsor's onboarding process. There is no registration step; the actual cause was that we had pinned
+`brevis-sdk` five releases below the documented minimum. The gateway now accepts our query.
+
+The true statement, and the only one to say aloud, is: **the gateway accepts our proofs; we have not
+run the on-chain payment leg, so no proof has landed on a chain.** Full record in
+`analysis/brevis-gateway-diagnosis.md`.
+
+If asked about it live, the honest answer is short and lands well: *"We had a stale dependency pin.
+We'd written two confident explanations for the failure before we actually traced it — both wrong."*
+
+
 Every number below was re-derived from its artifact per `VERIFY.md`. All check out — but **two
 phrasings would misstate the finding aloud.** Both are in the 3:50 section.
 
@@ -183,10 +198,10 @@ the judging room.
 > informed flow, and any reference price we picked would determine the sign of the result. The
 > sensitivity is published instead.
 >
-> Also disclosed: proofs are generated against a pre-Pectra block range, because the SDK can't parse
-> EIP-7702 transactions. And gateway submission isn't wired — Brevis routes queries only for
-> registered app circuits, and we didn't complete that step — so proofs are generated and verified
-> locally instead.
+> Also disclosed: our proof fixtures come from a pre-Pectra block range, because the SDK version we
+> started on couldn't parse EIP-7702 transactions. And while the Brevis gateway accepts our proofs,
+> we haven't run the on-chain payment leg — so no proof has landed on a chain yet. Everything you
+> saw was proven and verified locally.
 
 ---
 

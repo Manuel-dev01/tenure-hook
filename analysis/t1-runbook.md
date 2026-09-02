@@ -3,8 +3,8 @@
 **Updated 2026-08-30. T1a PASSED — this runbook is now largely a record, not a to-do list.**
 
 The 3 GiB trusted setup is downloaded and verified, keys were generated in 13.6 seconds, and a proof
-was generated and verified against the vk twice. What remains is the on-chain callback, blocked on a
-the gateway rejecting our unregistered app circuit (see below) and a funded Sepolia key.
+was generated and verified against the vk twice. **Gateway submission also works as of 2026-09-02.**
+What remains is only the on-chain callback, which needs a deployed registry and a funded key.
 
 **Important scope note:** everything below was done with the **upstream example circuit**, which is
 what closed the T1a round-trip gate. The production circuit `DirectionalBalanceCircuit` was wired
@@ -30,9 +30,9 @@ separately on Aug 30 and has its own keys, vk hash and verified proofs — see
 
 | Item | Blocker |
 |---|---|
-| Gateway submission | **Not wired — our gap, not Brevis's.** The gateway is reachable and rejects the query: `invalid app circuit chain 1 dummy input commitment 0x127d5d80...`. Brevis routes only registered app circuits and we did not complete that onboarding. An earlier `RST_STREAM` against the upstream EXAMPLE circuit was a separate, possibly transient failure; the two were conflated. **Not a gate.** |
-| On-chain callback | the gateway rejection above, plus a funded Sepolia key |
-| ~~Production circuit setup~~ | **DONE Aug 30** — `cmd/main.go` now runs `DirectionalBalanceCircuit`; vk hash `0x028f783f…4e3b0b` |
+| ~~Gateway submission~~ | **DONE 2026-09-02.** The gateway accepts the query and returns a query key. The blocker was a stale `brevis-sdk v0.3.12` pin whose hard-coded dummy input commitment the gateway had rotated — *not* registration, *not* an outage, both of which were written here previously and were false. See `analysis/brevis-gateway-diagnosis.md`. |
+| On-chain callback | **the only step left.** Needs a deployed registry, `setVkHash`, and a funded key on the destination chain to pay `BrevisRequest.sendRequest`. |
+| ~~Production circuit setup~~ | **DONE Aug 30, re-done Sep 2 under brevis-sdk v0.3.33** — `cmd/main.go` runs `DirectionalBalanceCircuit`; vk hash is now `0x0230047e…6f94b8`. The v0.3.12 hash `0x028f783f…4e3b0b` is dead. |
 
 ---
 
@@ -90,7 +90,12 @@ That tx hash is upstream's example: a mainnet USDC transfer ≥ 500 USDC. The ci
 
 ### 3. Gateway submission
 Handled by the same script — `Prover('localhost:33247')` proves locally, then
-`Brevis('appsdkv3.brevis.network:443')` submits. **No partner key required.**
+`Brevis('appsdkv3.brevis.network:443')` submits. **No partner key required** — Brevis document the
+partner key and callback address as not required, and both are empty strings in our call.
+
+Requires `brevis-sdk >= 0.3.17` on the Go side; we run **v0.3.33**. Below that floor the gateway
+rejects every query, because older SDKs hard-code per-chain dummy input commitments that Brevis has
+since rotated. `npm run gateway` re-checks this end to end.
 
 ### 4. On-chain callback — NEEDS A FUNDED SEPOLIA KEY
 ```bash

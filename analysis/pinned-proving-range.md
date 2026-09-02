@@ -1,10 +1,16 @@
 # Pinned proving range
 
+> **UPDATE 2026-09-02.** The SDK constraint below is probably gone: `brevis-sdk v0.3.33` pins a
+> go-ethereum fork that parses type 4 (`core/types/transaction.go`, `SetCodeTxType = 0x04`).
+> The fixtures have **not** been re-cut against a post-Pectra range, so the pinning still holds —
+> but it is now a property of these fixtures, not a limit of the SDK. Not claimed as fixed,
+> because it has not been tested.
+
 **Decided 2026-08-25. Pinned so it cannot be rediscovered under pressure on Sep 1.**
 
 ## The limitation, precisely
 
-`brevis-sdk v0.3.12` cannot build receipt proofs against blocks containing **EIP-7702 (type 4)**
+`brevis-sdk v0.3.12` could not build receipt proofs against blocks containing **EIP-7702 (type 4)**
 transactions. Building the receipts trie requires decoding every transaction in the block, and the
 SDK's leaf-hash code rejects that type with `transaction type not supported`.
 
