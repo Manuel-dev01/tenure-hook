@@ -14,6 +14,42 @@ bracket — you present a credential you earned.
 > evidence and the mainnet replay are all done and tested. No code path adjusts a fee based on
 > standing, and the hook does not hold the permission to.
 
+## Live on Sepolia
+
+A demonstration pool guarded by the hook, and a UI that talks to it.
+
+| | |
+|---|---|
+| **App** | https://manuel-dev01.github.io/tenure-hook/app.html |
+| **Landing** | https://manuel-dev01.github.io/tenure-hook/ |
+| Hook | [`0x8878dbEB…6D0080`](https://sepolia.etherscan.io/address/0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080) — address ends `0080`: `BEFORE_SWAP` only |
+| Router | [`0xA202C318…Fd3470`](https://sepolia.etherscan.io/address/0xA202C318D22Df67E6C347FC5b98F3d1adDFd3470) |
+| Standing registry | [`0x2fA2242c…709AaA`](https://sepolia.etherscan.io/address/0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA) — operator-written |
+| Pool | `tETH / tUSD`, fee 0.30%, tranche 250,000 |
+
+Press **Get demo tokens** in the app; the ERC20s have an open faucet, so nothing needs asking us for.
+
+**Four behaviours are asserted against the deployed contracts**, matched by error *selector* rather
+than by "it reverted" — a swap can revert for a dozen reasons unrelated to depth:
+
+```
+forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL
+
+1. swap at half the allowance   OK
+2. over the allowance           reverted ExceedsDepthAllowance
+3. split across legs in one tx  reverted DepthExhaustedThisTx
+4. unsigned swap at base depth  OK - nobody is excluded
+```
+
+(3) is the splitting attack and (4) is the anti-whitelist property — the two properties most easily
+lost in a refactor, so they are asserted on-chain rather than assumed.
+
+**Standing shown in the app is operator-written, not ZK-delivered**, and the app says so in a
+banner. `TenureRegistry` accepts only a Brevis callback and their aggregation service is retired, so
+against it `standingOf()` returns 0 for every address. `OperatorStandingRegistry` sits behind the
+same interface for exactly this case. The figure it holds is not invented: 9,375 bps over 32 swaps
+is the balanced fixture's real circuit output, reproducible with `npm run prove -- balanced`.
+
 ## Quick start
 
 ```bash

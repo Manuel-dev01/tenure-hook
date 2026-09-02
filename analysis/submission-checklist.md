@@ -84,7 +84,10 @@ reads as an omission.
 - [ ] All code written in the build window — commit history is the evidence.
 - [ ] README lists partner integrations **with file + line pointers**, and the lines are correct
       after any final refactor.
-- [ ] Tests or a frontend — we ship tests. `forge test --isolate` green.
+- [ ] Tests or a frontend — we ship **both**. The gate is met by the tests
+      (`forge test --isolate` green, 56 passing); the `docs/` UI is presentation on top.
+      *Say it that way round. A UI that breaks on the day would not endanger the gate, and
+      claiming it as the gate would make it do so.*
 - [ ] No uncredited copied code. `brevis/ATTRIBUTION.md` current; v4-core/periphery derivations
       credited in file headers.
 

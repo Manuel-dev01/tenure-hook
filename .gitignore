@@ -12,7 +12,10 @@ out/
 /broadcast/**/dry-run/
 
 # Docs
-docs/
+# `docs/` is Foundry's default for `forge doc` output, but it is ALSO where GitHub Pages
+# serves from, and the landing page and app live there. Ignore only what forge generates.
+docs/book/
+docs/src/
 
 # Dotenv file
 .env

@@ -1,0 +1,41 @@
+{
+  "note": "Live Sepolia deployment. The app reads this file so addresses live in exactly one place.",
+  "chainId": 11155111,
+  "chainName": "Sepolia",
+  "explorer": "https://sepolia.etherscan.io",
+  "poolManager": "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543",
+  "hook": "0x8878dbEB12C6Aba4ab6629DB41238d131e6D0080",
+  "router": "0xA202C318D22Df67E6C347FC5b98F3d1adDFd3470",
+  "standingRegistry": {
+    "address": "0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA",
+    "kind": "operator",
+    "label": "Operator-written registry",
+    "why": "TenureRegistry accepts only a Brevis callback, and Brevis' aggregation service is retired, so against it standingOf() returns 0 for every address. OperatorStandingRegistry sits behind the same IStandingRegistry interface for exactly this case. The figure it holds is not invented: 9375 bps over 32 swaps is the balanced fixture's real circuit output, reproducible with `npm run prove -- balanced`."
+  },
+  "zkRegistry": {
+    "address": "0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5",
+    "kind": "zk",
+    "vkHash": "0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8",
+    "status": "deployed and configured, but no proof has landed on any chain",
+    "why": "The gateway accepts and prices our query and reaches QS_PAID, but never QS_PROOF_READY. See analysis/brevis-gateway-diagnosis.md."
+  },
+  "pool": {
+    "id": "0x402c9dcb4dc9182b2ee9fa2622178a3cdb764c84b560c1061e1f913706f661d9",
+    "currency0": "0x0f07BFd5575fae87D3f178faCc592566378fbe25",
+    "currency1": "0x2596369630c5Ff13342B06Ed99d7a489300ABD87",
+    "fee": 3000,
+    "tickSpacing": 60,
+    "trancheWei": "250000000000000000000000",
+    "trancheNote": "In currency0 base units. The app swaps currency0 -> currency1 so the amount the hook meters and the amount shown are the same token."
+  },
+  "verified": {
+    "how": "forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL",
+    "results": [
+      "swap inside the allowance succeeds",
+      "swap over the allowance reverts ExceedsDepthAllowance",
+      "two legs in one transaction revert DepthExhaustedThisTx",
+      "unsigned swap executes at base depth"
+    ],
+    "note": "Matched by error selector, not by 'it reverted' - a swap can revert for reasons unrelated to depth."
+  }
+}
