@@ -29,7 +29,15 @@ jobs:
         run: forge fmt --check
 
       - name: Run Forge build
-        run: forge build --sizes
+        run: forge build
+
+      - name: Check deployed contract sizes (EIP-170)
+        # Scoped to src/ deliberately. EIP-170 constrains contracts that go on a chain; the demo
+        # harness in scripts/ embeds a whole PoolManager so it can run the mechanism offline, which
+        # puts it far over the limit and is fine because it is never deployed. Running the
+        # unscoped `forge build --sizes` here is what turned CI red on 2026-08-31, and it stayed
+        # red for four commits while the docs claimed it was green.
+        run: forge build --sizes --skip 'scripts/**' --skip 'test/**'
 
       - name: Run Forge tests
         # --isolate is required: without it the cross-transaction tests SKIP rather

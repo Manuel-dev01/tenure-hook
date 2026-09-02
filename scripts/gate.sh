@@ -15,6 +15,8 @@ skip()   { echo "  skip: $2 (stage $STAGE < $1)"; }
 
 # Temp dir: /tmp is not reliable across the shells this repo is built in.
 TMP="${TMPDIR:-.gate-tmp}"; mkdir -p "$TMP"
+# Absolute form, for the one check below that runs from a different directory.
+GATE_LOG_DIR="$(cd "$TMP" && pwd)"
 
 # ---- stage inference ---------------------------------------------------------
 # 1 = hook standalone, 2 = circuit, 3 = wired on-chain, 4 = evidence, 5 = freeze
@@ -38,6 +40,33 @@ if grep -qE '[1-9][0-9]* skipped' "$TMP/gate_test.log" 2>/dev/null; then
 else
   echo "  ok:   no skipped tests"
 fi
+
+# The circuit's arithmetic evidence lives in a GO test, not a Solidity one, and this gate used to
+# miss it entirely: the brevis-sdk v0.3.12 -> v0.3.33 upgrade made TestS5_BalancedVersusOneSided
+# panic, and every Foundry check above stayed green. The README cites that test, so it is gated.
+#
+# Not added to CI: it needs Go plus a reachable Brevis gateway, and a network-flaky red badge the
+# night before a submission is worse than a check that runs here. Skipped, loudly, if Go is absent.
+if [ "$STAGE" -ge 2 ]; then
+  if command -v go >/dev/null 2>&1; then
+    # TMPDIR is relative here, and the go toolchain resolves it against ITS OWN working
+    # directory - so after the cd it looks for brevis/prover/.gate-tmp and dies before running a
+    # single test. Clear it and let go use the system default.
+    ( cd brevis/prover && TMPDIR= TMP= TEMP= go test ./... ) >"$GATE_LOG_DIR/gate_gotest.log" 2>&1
+    check $? "go test ./... green in brevis/prover (see $TMP/gate_gotest.log)"
+  else
+    echo "  skip: go test — go not on PATH (the S5 circuit evidence is NOT verified)"
+  fi
+else
+  skip 2 "go test (circuit evidence)"
+fi
+
+# CI runs a build and a size check; the gate did not, so a red CI badge could sit on main
+# undetected. It did, for four commits. Same two commands, same scoping.
+forge build >"$TMP/gate_build.log" 2>&1
+check $? "forge build clean (see $TMP/gate_build.log)"
+forge build --sizes --skip 'scripts/**' --skip 'test/**' >"$TMP/gate_sizes.log" 2>&1
+check $? "deployed contracts within EIP-170 (see $TMP/gate_sizes.log)"
 
 echo "== 2. fee parity (disqualifying if violated) =="
 # No banned identifiers anywhere in src/. These are how loyalty-pricing framing
