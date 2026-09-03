@@ -11,14 +11,14 @@
     "address": "0x2fA2242c80F7a7a7690cF0a36a19FcFf70709AaA",
     "kind": "operator",
     "label": "Operator-written registry",
-    "why": "TenureRegistry accepts only a Brevis callback. Our query was accepted, priced and PAID on Sepolia (tx 0xd5f1a81ba9a7277525dd79ec353d30ea06248fdbcbda946f56826b6ae406fb47), reached QS_PAID, and no callback arrived in the 47 minutes we watched - so standingOf() returns 0 for every address there. OperatorStandingRegistry sits behind the same IStandingRegistry interface for exactly this case. The figure it holds is not invented: 9375 bps over 32 swaps is the balanced fixture's real circuit output, reproducible with `npm run prove -- balanced`. The original failure was OUR OWN stale brevis-sdk v0.3.12 pin, five releases below Brevis' documented minimum."
+    "why": "TenureRegistry accepts only a Brevis callback. Our query was accepted, priced and PAID on Sepolia (tx 0xd5f1a81ba9a7277525dd79ec353d30ea06248fdbcbda946f56826b6ae406fb47), and the gateway holds a correct decodable result for it, but Brevis never submitted the aggregated proof and no deployment we could reach shows fulfilment traffic - so standingOf() returns 0 for every address there. OperatorStandingRegistry sits behind the same IStandingRegistry interface for exactly this case. The figure it holds is not invented: 9375 bps over 32 swaps is the balanced fixture's real circuit output, reproducible with `npm run prove -- balanced`. The original failure was OUR OWN stale brevis-sdk v0.3.12 pin, five releases below Brevis' documented minimum."
   },
   "zkRegistry": {
     "address": "0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5",
     "kind": "zk",
     "vkHash": "0x0230047e074d6b8c19ab6714303a3c84412e6dc7a6d540835925f1e08e6f94b8",
     "status": "deployed and configured; the query was accepted, priced and paid, but no callback arrived and no proof has landed on any chain",
-    "why": "The gateway accepts and prices our query and it reaches QS_PAID, but never QS_PROOF_READY. Watched 47 minutes / 567 blocks. That is the measured claim - see analysis/brevis-gateway-diagnosis.md, which explicitly declines to upgrade it into a claim about Brevis' infrastructure."
+    "why": "The gateway accepts and prices our query and it reaches QS_PAID, but never QS_PROOF_READY. No BrevisRequest deployment we could reach shows any fulfilment traffic, so this is not specific to Sepolia. That is the measured claim - see analysis/brevis-gateway-diagnosis.md, which explicitly declines to upgrade it into a claim about Brevis' infrastructure."
   },
   "pool": {
     "id": "0x402c9dcb4dc9182b2ee9fa2622178a3cdb764c84b560c1061e1f913706f661d9",

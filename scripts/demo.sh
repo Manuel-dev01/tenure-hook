@@ -242,7 +242,9 @@ What was just demonstrated, in one line each:
   · an unsigned swap still executes, at base depth, nobody is excluded
 
 Not claimed: no proof has landed on any chain. Our query was accepted, priced
-and paid on Sepolia and reached QS_PAID; no callback arrived in the 47 minutes
-we watched. So standing in the app is operator-written, and the app says so.
+and paid on Sepolia, and the gateway holds a correct decodable result for it.
+Brevis never submitted the aggregated proof. No BrevisRequest deployment we
+could reach shows any fulfilment traffic, so this is not specific to the chain
+we chose. Standing in the app is operator-written, and the app says so.
 SUMMARY
 exit 0

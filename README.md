@@ -20,22 +20,41 @@ through.
 
 ## Contents
 
-| | |
-|---|---|
-| [Quick start](#quick-start) | clone, run, see it work |
-| [What is live](#what-is-live) | deployed addresses, and what is not live |
-| [How it works](#how-it-works) | the mechanism in one page |
-| [What this claims, and what it does not](#what-this-claims-and-what-it-does-not) | the honesty section |
-| [Impact](#impact-measured-on-15804-real-mainnet-swaps) | measured on real mainnet traffic |
-| [Limitations](#limitations) | every one we know of |
-| [Partner integrations](#partner-integrations) | Brevis, what works, with file pointers |
-| [Documentation map](#documentation-map) | where everything else lives |
-| [Running the tests](#running-the-tests) | suites, pins, attribution |
+[Quick start](#quick-start) · [What is live](#what-is-live) · [What this claims, and what it does
+not](#what-this-claims-and-what-it-does-not) · [Impact](#impact-measured-on-15804-real-mainnet-swaps)
+· [Limitations](#limitations) · [Partner integrations](#partner-integrations) ·
+[Documentation map](#documentation-map) · [Running the tests](#running-the-tests)
 
 **Deeper reading:** [ARCHITECTURE.md](ARCHITECTURE.md) for the design and why each piece is shaped
 the way it is. [DEMO.md](DEMO.md) for how to run and verify every claim yourself.
 
 ---
+
+## How it works
+
+**1. Prove your history.** A Brevis ZK circuit reads real Uniswap `Swap` logs and proves one number:
+directional balance, `2 × min(buys, sells) / total`, in basis points. Counts only. No price series,
+no post-trade window, no oracle. That restriction is machine enforced by `scripts/gate.sh`.
+
+**2. Standing is recorded** in a registry the hook reads. Proving takes 57 to 176 seconds, so it
+cannot happen inside `beforeSwap`. Standing is attested first and consumed later, never proven at
+swap time.
+
+**3. You sign a credential.** An EIP-712 `DepthCredential` binding the router, the pool, a maximum
+size, a nonce and a deadline. `beforeSwap` receives the locker, never your address, and
+`msgSender()` is self-reported by the router, so identity comes from a signature you control.
+
+**4. The pool caps your size, never your access.** Accessible depth runs linearly from **5%** of the
+pool's tranche at zero standing to **100%** at full standing. Continuous and monotonic, with no
+brackets and no cliffs.
+
+**5. Splitting buys nothing.** Depth is metered per transaction in transient storage, keyed to the
+recovered signer, so signing several credentials and splitting one large take into cap-sized pieces
+reverts. Unsigned swaps are metered too, because exempting them would make signing strictly worse
+than not signing and the mechanism would run backwards.
+
+---
+
 
 ## Quick start
 
@@ -123,28 +142,11 @@ is generated and the output is correct. What has not happened is Brevis submitti
 proof on chain, so `brevisCallback` never fired.
 
 **This is not specific to the chain we chose.** Every BrevisRequest deployment Brevis documents was
-surveyed. All are unpaused with active provers registered, and all are receiving no traffic:
-
-| chain | BrevisRequest | window | events |
-|---|---|---|---|
-| Arbitrum One 42161 | `0x91540fe3...`, the one pair in current docs | 4,000,000 blocks | **0** |
-| Sepolia 11155111 | `0xa082F86d...`, the one we paid | 150,000 blocks | **1**, ours |
-| Sepolia 11155111 | `0x841ce48F...`, legacy page | 150,000 blocks | **0** |
-| Optimism 10 | `0x9f5b558c...`, legacy page | 4,000,000 blocks | **0** |
-| Base 8453 | `0x3463b379...`, legacy page | 4,000,000 blocks | **0** |
-| BSC Testnet 97 | `0xF7E9CB6b...`, legacy page | 48,000 blocks | **0** |
-| Arbitrum One 42161 | BrevisProof `0x0fEc0b24...` | 500,000 blocks | **0** |
-| Sepolia 11155111 | BrevisProof `0x70cFEb37...` | 150,000 blocks | **0** |
-
-Measured with `eth_getLogs`, which pruned nodes still serve because logs are not state, and with a
-control: Sepolia WETH returned 122 events over the same endpoint and range shape, so an empty result
-means empty rather than broken. Two limits worth stating: Holesky's public endpoint returned 403, so
-this is every deployment we could reach rather than every deployment; and a window shows no traffic
-recently, not no traffic ever.
-
-So the complete account is: **the gateway holds a correct, decodable result for our paid query, and
-no Brevis deployment we could reach shows fulfilment traffic.** Both halves are checkable by anyone
-with an RPC endpoint and no access of ours.
+surveyed: Arbitrum, both Sepolia deployments, Optimism and BSC Testnet, plus BrevisProof on Arbitrum
+and Sepolia. All are unpaused with active provers registered. All show zero events over windows of
+up to 4,000,000 blocks, except ours, which shows exactly one: our own payment. The table, the
+control that makes an empty result mean empty, and the two limits on that claim are in
+[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
 
 Because delivery is outstanding, standing in the app is written by the operator registry, the second
 trust model behind the same interface. The figure it holds is not invented either: 9,375 bps over 32
@@ -158,33 +160,6 @@ the one-sided one. Full record, including a measurement error we made and retrac
 
 ---
 
-## How it works
-
-**1. Prove your history.** A Brevis ZK circuit reads real Uniswap `Swap` logs and proves one number:
-directional balance, `2 × min(buys, sells) / total`, in basis points. Counts only. No price series,
-no post-trade window, no oracle. That restriction is machine enforced by `scripts/gate.sh`.
-
-**2. Standing is recorded** in a registry the hook reads. Proving takes 57 to 176 seconds, so it
-cannot happen inside `beforeSwap`. Standing is attested first and consumed later, never proven at
-swap time.
-
-**3. You sign a credential.** An EIP-712 `DepthCredential` binding the router, the pool, a maximum
-size, a nonce and a deadline. `beforeSwap` receives the locker, never your address, and
-`msgSender()` is self-reported by the router, so identity comes from a signature you control.
-
-**4. The pool caps your size, never your access.** Accessible depth runs linearly from **5%** of the
-pool's tranche at zero standing to **100%** at full standing. Continuous and monotonic, with no
-brackets and no cliffs.
-
-**5. Splitting buys nothing.** Depth is metered per transaction in transient storage, keyed to the
-recovered signer, so signing several credentials and splitting one large take into cap-sized pieces
-reverts. Unsigned swaps are metered too, because exempting them would make signing strictly worse
-than not signing and the mechanism would run backwards.
-
-Design, diagrams, and the v4 constraints that shaped each decision:
-**[ARCHITECTURE.md](ARCHITECTURE.md)**.
-
----
 
 ## What this claims, and what it does not
 
