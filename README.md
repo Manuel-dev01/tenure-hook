@@ -22,6 +22,8 @@ through.
 
 [Quick start](#quick-start) · [What is live](#what-is-live) · [What this claims, and what it does
 not](#what-this-claims-and-what-it-does-not) · [Impact](#impact-measured-on-three-real-mainnet-pools)
+· [A null result](#a-null-result-and-what-survives-it) ·
+[Measuring your own pool](#measuring-whether-tenure-will-bind-on-your-pool)
 · [Limitations](#limitations) · [Partner integrations](#partner-integrations) ·
 [Documentation map](#documentation-map) · [Running the tests](#running-the-tests)
 
@@ -220,38 +222,84 @@ Volume by accessible-depth band:
 | 6000–7999 bps | 41.5% | 35.0% | 2.3% |
 | 8000–9999 bps | 35.3% | 32.1% | 87.4% |
 
-### What the comparison shows, including what it costs us to say
-
-**The theme's thesis is not confirmed, and we do not claim it.** If volatile pairs were where
-one-sided flow concentrates, the targeted share would rise on them. It falls: 1.3% on USDC/WETH,
-0.8% on PEPE, 0.1% on LINK. The mechanism binds *less* where the theme says the problem is worst.
-
-**On PEPE the collateral cost more than doubles.** Nearly a fifth of its volume, 19.8%, comes from
-addresses with too little history to be measured, against 7.7% on USDC/WETH. On a thinner pool much
-more flow is one-off, so base depth catches ordinary traders rather than the flow being aimed at.
-
-**LINK contradicts PEPE, which is why two volatile pools were run rather than one.** Its unmeasured
-share is 5.5%, *lower* than USDC/WETH, and its volume-weighted depth is 8779 bps, well *above* it.
-On one volatile pool, "volatile pools have more unmeasurable flow" would have looked like a finding.
-It is not one.
-
-**So the honest conclusion is that the mechanism's bite is pool-specific, not volatility-specific.**
-The spread across these three pools is wider than any stable-versus-volatile split, and it tracks how
-concentrated flow is among repeat addresses rather than how volatile the asset is. LINK's volume sits
-almost entirely in the top band because a few balanced repeat traders dominate it; PEPE's does not
-because one-off wallets do.
-
-**The volatile samples are thin.** 10 and 9 qualifying addresses is not a population. The direction
-of the one-sided result is consistent across all three pools, and that is the most that should be
-read into it.
-
-**Nobody reaches full depth on any of the three.** The highest standing observed is 9767, 9662 and
-9936 bps. `FULL_DEPTH_STANDING` requires perfect balance, which no real address achieves.
-
 **Tranche sizing has a real cost.** At a 500,000 USDC tranche on USDC/WETH, base depth blocks 20.8%
 of long-tail swaps; 28.5% at 250,000 and 42.5% at 100,000. The median long-tail swap is 3,563 USDC.
 An operator who sets the tranche too low pushes ordinary flow into the floor.
 
+
+---
+
+## A null result, and what survives it
+
+**What the theme claims.** That the hard problem lives on volatile pairs: pools that need to stay
+sustainable at low fees, where one-sided informed flow does the most damage.
+
+**What we tested.** Whether Tenure binds harder there. Same N = 20, same constants, same code path,
+same pinned block range; only the pool address changes. USDC/WETH 0.05% as the incumbent, plus
+PEPE/WETH 0.30% and LINK/WETH 0.30%. Two volatile pools rather than one, because a single pool
+cannot separate a property of volatility from a property of that pool.
+
+**What we found.** The share of volume the mechanism actually targets, addresses measured and found
+one-sided, is **1.3% on USDC/WETH, 0.8% on PEPE, 0.1% on LINK.** It does not rise on the volatile
+pairs. On PEPE the collateral cost more than doubles, 19.8% of volume from addresses too new to
+measure against 7.7%; on LINK it *falls* to 5.5%, and LINK's volume-weighted depth of 8779 bps is
+well above USDC/WETH's 6721.
+
+**This is a null result, not a refutation.** Ten and nine addresses clear N = 20 on the two volatile
+pools. That is a direction, not a population, and it cannot refute the theme's claim any more than
+it can confirm it. What it does rule out is us asserting the claim as measured, which is what a
+one-pool result would have let us do.
+
+**Why the sample is thin, and why that is a disclosure rather than a choice.** The measurement runs
+on a pinned pre-Pectra range anchored at block 21,146,236. That range exists because
+`brevis-sdk v0.3.12` could not build receipt proofs over blocks containing EIP-7702 transactions, so
+the fixtures had to be cut from before Pectra
+([detail](analysis/pinned-proving-range.md)). Twenty thousand blocks of a single historical window
+is plenty on the busiest pool on Ethereum and thin everywhere else, so **the same disclosure that
+explains the block range also explains the sample size.** v0.3.33 pins a go-ethereum fork that does
+parse type 4 transactions, so the constraint is probably liftable, but the fixtures were never
+re-cut and we do not claim it is fixed. A wider range would test this properly and was not run.
+
+**What survives, and it is the part that matters.** The two properties the mechanism is actually
+built on are **pool-independent and separately proven**: the cap **binds**, and it **cannot be split
+around**. Those hold in the three-arm A/B, in 44 tests, and against the deployed Sepolia contracts,
+matched by error selector. Nothing in the two-pool result touches them.
+
+What varies between pools is only **how much flow the cap catches**, and across these three that
+tracks how concentrated volume is among repeat addresses rather than how volatile the asset is.
+LINK's volume sits almost entirely in the top band because a few balanced repeat traders dominate
+it. PEPE's does not, because one-off wallets do.
+
+---
+
+## Measuring whether Tenure will bind on your pool
+
+The useful thing to come out of the null result is that **this is measurable before you deploy
+anything.** If the bite is pool-specific, an operator should not have to guess which kind of pool
+they have. The two scripts that produced the comparison above run against any Uniswap V3 pool:
+
+```bash
+# 1. collect Swap logs for your pool over the pinned range
+python scripts/collect_pool.py <pool-address> mypool_logs.json
+
+# 2. compare it against whatever else you have collected
+#    format:  <logs>|<label>|<volume leg 0 or 1>|<decimals>|<unit>
+python scripts/compare_pools.py   "mypool_logs.json|MY POOL|1|18|WETH"   "range_logs.json|USDC/WETH 0.05%|0|6|USDC"
+```
+
+It reports, for each pool: how many addresses clear N = 20, their share of volume, the balance-band
+and depth-band distributions, volume- and swap-weighted mean accessible depth, and the low-band split
+between addresses measured and found one-sided and addresses with too little history to measure.
+
+**The number to look at is that last split.** It is the ratio between the flow Tenure is aimed at and
+the flow it catches incidentally. On USDC/WETH it is 1.3% against 7.7%; on PEPE 0.8% against 19.8%.
+A pool where the second number dwarfs the first is a pool where this mechanism costs more than it
+collects, and an operator can see that before deploying rather than after.
+
+Run against the published USDC/WETH figures as a control, `compare_pools.py` reproduces every number
+in [`analysis/mainnet-replay.md`](analysis/mainnet-replay.md) exactly, including the depth-band
+table. That is the check that a difference between pools is a difference between pools and not
+between scripts.
 
 ---
 
@@ -267,8 +315,8 @@ Every one we know of, stated here rather than left to be found.
 | **Router-batched unsigned users share one bucket** | Any of them can sign a zero-standing credential, which is free and permissionless, to isolate themselves. |
 | **Opening-leg blindness** | `beforeSwap` fires before delta accounting, so the hook never sees the first leg of a composite operation. This is a v4 property, not a defect in the hook. |
 | **No LP outcome claim** | See [above](#what-this-claims-and-what-it-does-not). |
-| **The mechanism binds less on volatile pairs, not more** | On the two volatile pools measured, the flow the mechanism targets is *smaller* than on USDC/WETH: one-sided volume is 1.3% there, 0.8% on PEPE/WETH and 0.1% on LINK/WETH. On PEPE, 19.8% of volume comes from addresses too new to be measured, against 7.7% on USDC/WETH, so base depth falls on ordinary traders instead. The bite is pool-specific rather than volatility-specific. [Detail](analysis/mainnet-replay.md). |
-| **The volatile samples are thin** | 10 and 9 addresses clear N = 20 on PEPE/WETH and LINK/WETH. That is enough to show a direction, not enough to be a population. A wider block range would test it properly and was not run. |
+| **No evidence that the mechanism binds harder on volatile pairs** | A null result, not a refutation. On the two volatile pools measured, the targeted flow is *smaller* than on USDC/WETH: one-sided volume is 1.3% there, 0.8% on PEPE/WETH, 0.1% on LINK/WETH. On PEPE, 19.8% of volume comes from addresses too new to measure against 7.7%, so base depth falls on ordinary traders instead; on LINK that figure is 5.5%, lower than USDC/WETH. Across these three the bite tracks concentration of flow among repeat addresses rather than volatility. [Detail](analysis/mainnet-replay.md). |
+| **The volatile samples are thin** | 10 and 9 addresses clear N = 20 on PEPE/WETH and LINK/WETH. That is a direction, not a population, and it cannot settle the question either way. The cause is the pinned pre-Pectra range, which exists because `brevis-sdk v0.3.12` could not parse EIP-7702 transactions; 20,000 blocks is plenty on the busiest pool and thin everywhere else. A wider range would test it properly and was not run. [Detail](analysis/pinned-proving-range.md). |
 | **One address holds standing on the demo pool** | A fresh wallet gets base depth, which is the correct behaviour and is what the app shows. |
 
 ---

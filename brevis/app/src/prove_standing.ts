@@ -1,3 +1,6 @@
+// Authored for Tenure (UHI10). Not upstream quickstart code.
+// Provenance rules and the full ours/theirs split: ../../ATTRIBUTION.md
+
 // Generate a directional-balance proof with the PRODUCTION circuit against real mainnet swap logs.
 //
 // This is the end-to-end local proving path for `DirectionalBalanceCircuit`:

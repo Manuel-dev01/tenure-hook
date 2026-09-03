@@ -68,6 +68,13 @@ def analyse(path, label, vol_leg, vol_dec, unit):
     for r in rows:
         bands[min((r["bal"] // 2000) * 2000, 8000)] += r["vol"]
 
+    # depth-band distribution: the same volume cut by the depth actually received, which is what
+    # the published Stage 5 table reports. Unmeasured addresses sit at BASE_DEPTH_BPS, not at 0,
+    # so this is NOT the balance table relabelled.
+    dbands = collections.OrderedDict((b, 0) for b in range(0, 10000, 2000))
+    for r in rows:
+        dbands[min((r["df"] // 2000) * 2000, 8000)] += r["vol"]
+
     # low-band decomposition
     low_one_sided = sum(r["vol"] for r in rows if r["measured"] and r["bal"] < 2000)
     low_unmeasured = sum(r["vol"] for r in rows if not r["measured"])
@@ -85,6 +92,7 @@ def analyse(path, label, vol_leg, vol_dec, unit):
         "q_vol_pct": 100 * q_vol / max(total_vol, 1),
         "vw": vw, "sw": sw, "fulls": fulls, "top": top,
         "bands": {k: 100 * v / max(total_vol, 1) for k, v in bands.items()},
+        "dbands": {k: 100 * v / max(total_vol, 1) for k, v in dbands.items()},
         "low_one_sided_pct": 100 * low_one_sided / max(total_vol, 1),
         "low_unmeasured_pct": 100 * low_unmeasured / max(total_vol, 1),
         "n_one_sided": n_one_sided, "n_unmeasured": n_unmeasured,
@@ -112,7 +120,10 @@ def show(r):
     print("  balance bands, share of volume:")
     for k, v in r["bands"].items():
         print("    {:5d}-{:5d} bps  {:6.1f}%  {}".format(k, k + 1999, v, "#" * int(v / 2)))
-    print("  low band decomposition (0-1999 bps = {:.1f}% of volume):".format(r["bands"][0]))
+    print("  depth bands, share of volume:")
+    for k, v in r["dbands"].items():
+        print("    {:5d}-{:5d} bps  {:6.1f}%  {}".format(k, k + 1999, v, "#" * int(v / 2)))
+    print("  low band decomposition (balance 0-1999 = {:.1f}% of volume):".format(r["bands"][0]))
     print("    measured, one-sided        : {:.1f}% of volume  ({} addresses)".format(
         r["low_one_sided_pct"], r["n_one_sided"]))
     print("    too little history to measure: {:.1f}% of volume  ({} addresses)".format(

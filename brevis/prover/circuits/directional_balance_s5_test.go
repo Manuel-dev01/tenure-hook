@@ -1,3 +1,6 @@
+// Authored for Tenure (UHI10). Not upstream quickstart code.
+// Provenance rules and the full ours/theirs split: brevis/ATTRIBUTION.md
+
 package circuits
 
 import (

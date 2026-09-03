@@ -1,3 +1,6 @@
+// Authored for Tenure (UHI10). Not upstream quickstart code.
+// Provenance rules and the full ours/theirs split: ../../ATTRIBUTION.md
+
 // A ProofRequest that names its source chain.
 //
 // WHY THIS EXISTS. brevis-sdk-typescript is pinned at 1.3.1 (published Nov 2024) because that is

@@ -14,12 +14,29 @@ exact code that answered that gate visible in this repository's history.
 
 ## What is ours vs theirs
 
-At the time of the T1 gate, **everything here is upstream's**. Any file authored for Tenure carries
-a header saying so. The Tenure standing circuit, when written, replaces
-`prover/circuits/circuit.go` and will be marked accordingly.
+Every file authored for Tenure carries a header saying so. Nothing in this directory is claimed as
+original work unless its header says otherwise, per the UHI10 binary gate on uncredited code.
 
-Per the UHI10 binary gate on uncredited code: nothing in this directory is claimed as original work
-unless its header says otherwise.
+**Ours:**
+
+| File | What it is |
+|---|---|
+| `prover/circuits/directional_balance.go` | the production circuit: directional balance from swap logs only |
+| `prover/circuits/directional_balance_s5_test.go` | its test, checking circuit output against a figure computed outside the circuit |
+| `app/src/prove_standing.ts` | builds the proof request, proves locally, verifies the decoded output |
+| `app/src/test_gateway.ts` | the gateway diagnostic that traced the stale-SDK rejection |
+| `app/src/chain_scoped_request.ts` | sets `src_chain_id`, which brevis-sdk-typescript 1.3.1 never does |
+| `prover/cmd/main.go` | **modified**, not authored: see the changes table below |
+| `prover/go.mod`, `go.sum` | **modified**: SDK bump and restated replace directives |
+
+**Upstream's, unmodified:** `prover/circuits/circuit.go` and `circuit_test.go` (the example circuit,
+retained because it closed the T1 round-trip gate), `app/src/index.ts`, `prover/Makefile`,
+`prover/configs/`, `LICENSE`, `README.md`, and the app's config and lockfiles.
+
+**An earlier version of this section was written in the future tense** ("the Tenure standing circuit,
+when written, ... will be marked accordingly") and was never updated once the circuit existed. Under
+its own rule, five files we wrote read as upstream's because they carried no header. Corrected
+2026-09-03: the headers were added and the table above replaces the promise.
 
 ---
 
@@ -28,6 +45,9 @@ unless its header says otherwise.
 | File | Change | Date |
 |---|---|---|
 | `prover/cmd/main.go` | `RpcURL` swapped from `https://eth.llamarpc.com` (origin returning Cloudflare 521, aborting prover startup after a successful setup) to `https://ethereum-rpc.publicnode.com`, verified responding to `eth_blockNumber`. Marked inline with a `TENURE CHANGE` comment. | 2026-08-25 |
+| `prover/cmd/main.go` | RPC moved again to `https://eth.drpc.org`, because the pinned proving range needs an archive endpoint. See the endpoint table below. | 2026-08-30 |
+| `prover/cmd/main.go` | Instantiates `DirectionalBalanceCircuit` instead of the upstream example, and adapts to the v0.3.33 API: source RPC moves into `prover.SourceChainConfigs`, `Serve` takes an explicit REST port. | 2026-09-02 |
+| `prover/go.mod`, `go.sum` | `brevis-sdk` v0.3.12 to v0.3.33, with `gnark` and `go-ethereum` replace directives restated. | 2026-09-02 |
 
 Everything else under `brevis/` remains upstream's, unmodified.
 

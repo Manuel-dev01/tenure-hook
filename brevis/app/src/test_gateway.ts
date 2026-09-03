@@ -1,3 +1,6 @@
+// Authored for Tenure (UHI10). Not upstream quickstart code.
+// Provenance rules and the full ours/theirs split: ../../ATTRIBUTION.md
+
 // Probe: does the Brevis gateway accept a query for OUR production circuit?
 //
 // This is a diagnostic, not part of the submission path.
