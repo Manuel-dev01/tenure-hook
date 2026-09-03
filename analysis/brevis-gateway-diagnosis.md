@@ -306,6 +306,11 @@ a badly backed-up queue looks identical from outside. The claim is bounded by wh
 *no callback within 47 minutes*. Do not upgrade it to *"Brevis has shut Sepolia down"*, which is a
 claim about their infrastructure that we cannot see.
 
+> **This paragraph is the state as of the first observation and is superseded by the next section.**
+> The bound is no longer 47 minutes, and the finding is no longer specific to Sepolia. See
+> "Re-checked 2026-09-02" below for the 11 h 24 m measurement and the survey of every deployment.
+> The caution against saying "shut down" still stands, and stands harder.
+
 ### Re-checked 2026-09-02 21:05 UTC, 11 h 24 m after payment
 
 Nothing had moved. What the re-check added is not more waiting, it is four things that were not
