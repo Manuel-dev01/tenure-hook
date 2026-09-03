@@ -21,7 +21,7 @@ through.
 ## Contents
 
 [Quick start](#quick-start) · [What is live](#what-is-live) · [What this claims, and what it does
-not](#what-this-claims-and-what-it-does-not) · [Impact](#impact-measured-on-15804-real-mainnet-swaps)
+not](#what-this-claims-and-what-it-does-not) · [Impact](#impact-measured-on-three-real-mainnet-pools)
 · [Limitations](#limitations) · [Partner integrations](#partner-integrations) ·
 [Documentation map](#documentation-map) · [Running the tests](#running-the-tests)
 
@@ -186,42 +186,72 @@ LP value figure is reported, and the sensitivity is published instead.
 
 ---
 
-## Impact, measured on 15,804 real mainnet swaps
+## Impact, measured on three real mainnet pools
 
-Replayed against the pinned range on the USDC/WETH 0.05% pool
-([`analysis/mainnet-replay.md`](analysis/mainnet-replay.md)). Every figure is counted from logs.
-None requires a counterfactual.
+Replayed against the pinned block range on **USDC/WETH 0.05%**, **PEPE/WETH 0.30%** and
+**LINK/WETH 0.30%**: same N = 20, same constants, same code path, only the pool address changes.
+Every figure is counted from logs; none requires a counterfactual.
+Full working: [`analysis/mainnet-replay.md`](analysis/mainnet-replay.md).
 
-| measure | value |
-|---|---|
-| **volume-weighted mean accessible depth** | **6721 bps, 67.2% of the tranche** |
-| swap-weighted mean accessible depth | 5984 bps, 59.8% |
-| floor (no standing) | 500 bps |
+**USDC/WETH was the original choice for one reason: log density.** It carries 15,804 swaps in the
+pinned 20,000-block range against roughly 1,400 for the busiest volatile pair, so it is the only
+pool in this range with enough repeat addresses to say anything about standing. It is also the
+deepest, most efficient pool on Ethereum, which is where this problem is least acute, so the two
+volatile pairs were added to test the mechanism where the theme actually points.
 
-**The average dollar on this pool moves at roughly two-thirds of the tranche, while the average
-address sits near the floor.** Depth tracks proven behaviour, not headcount. That gap is the
-mechanism doing its job.
+| measure | USDC/WETH 0.05% | PEPE/WETH 0.30% | LINK/WETH 0.30% |
+|---|---|---|---|
+| swaps in the range | 15,804 | 1,446 | 1,016 |
+| distinct addresses | 906 | 132 | 89 |
+| clear N = 20 | 52 (5.7%) | 10 (7.6%) | 9 (10.1%) |
+| their share of volume | 92.3% | 80.2% | 94.5% |
+| **volume-weighted mean depth** | **6721 bps** | **6376 bps** | **8779 bps** |
+| swap-weighted mean depth | 5984 bps | 5440 bps | 7456 bps |
+| **measured and one-sided, the target** | **1.3%** | **0.8%** | **0.1%** |
+| too little history to measure | 7.7% | **19.8%** | 5.5% |
 
-### Who the restraint actually falls on, including people we did not aim at
+Volume by accessible-depth band:
 
-8.8% of volume sits in the lowest depth band. That is not one population, and the distinction
-matters:
+| band | USDC/WETH | PEPE/WETH | LINK/WETH |
+|---|---|---|---|
+| 0–1999 bps | 8.8% | 20.6% | 5.6% |
+| 2000–3999 bps | 0.6% | 0.0% | 0.0% |
+| 4000–5999 bps | 13.8% | 12.3% | 4.7% |
+| 6000–7999 bps | 41.5% | 35.0% | 2.3% |
+| 8000–9999 bps | 35.3% | 32.1% | 87.4% |
 
-| group | share of volume | is this the target? |
-|---|---|---|
-| measured, and one-sided | 1.3% | **yes** |
-| not enough history to be measured | about 7.5% | **no** |
+### What the comparison shows, including what it costs us to say
 
-The second group's only characteristic is being new to this pool. They are **not excluded**. They
-trade at base depth like every unsigned swapper, and standing is permissionlessly acquirable by
-trading two-sidedly. But they pay part of the cost of a mechanism aimed at someone else, and that is
-the honest price of requiring evidence before granting depth.
+**The theme's thesis is not confirmed, and we do not claim it.** If volatile pairs were where
+one-sided flow concentrates, the targeted share would rise on them. It falls: 1.3% on USDC/WETH,
+0.8% on PEPE, 0.1% on LINK. The mechanism binds *less* where the theme says the problem is worst.
 
-**This compounds with tranche sizing.** An operator who sets the tranche too low pushes more
-ordinary flow into that same floor. At a 500,000 USDC tranche, base depth blocks **20.8%** of
-long-tail swaps. Below that it gets worse: **28.5%** at 250,000 and **42.5%** at 100,000. The median
-long-tail swap is 3,563 USDC. The two caveats are one point. The cost of the mechanism lands partly
-on people it is not aimed at, and a badly sized tranche makes that worse.
+**On PEPE the collateral cost more than doubles.** Nearly a fifth of its volume, 19.8%, comes from
+addresses with too little history to be measured, against 7.7% on USDC/WETH. On a thinner pool much
+more flow is one-off, so base depth catches ordinary traders rather than the flow being aimed at.
+
+**LINK contradicts PEPE, which is why two volatile pools were run rather than one.** Its unmeasured
+share is 5.5%, *lower* than USDC/WETH, and its volume-weighted depth is 8779 bps, well *above* it.
+On one volatile pool, "volatile pools have more unmeasurable flow" would have looked like a finding.
+It is not one.
+
+**So the honest conclusion is that the mechanism's bite is pool-specific, not volatility-specific.**
+The spread across these three pools is wider than any stable-versus-volatile split, and it tracks how
+concentrated flow is among repeat addresses rather than how volatile the asset is. LINK's volume sits
+almost entirely in the top band because a few balanced repeat traders dominate it; PEPE's does not
+because one-off wallets do.
+
+**The volatile samples are thin.** 10 and 9 qualifying addresses is not a population. The direction
+of the one-sided result is consistent across all three pools, and that is the most that should be
+read into it.
+
+**Nobody reaches full depth on any of the three.** The highest standing observed is 9767, 9662 and
+9936 bps. `FULL_DEPTH_STANDING` requires perfect balance, which no real address achieves.
+
+**Tranche sizing has a real cost.** At a 500,000 USDC tranche on USDC/WETH, base depth blocks 20.8%
+of long-tail swaps; 28.5% at 250,000 and 42.5% at 100,000. The median long-tail swap is 3,563 USDC.
+An operator who sets the tranche too low pushes ordinary flow into the floor.
+
 
 ---
 
@@ -237,6 +267,8 @@ Every one we know of, stated here rather than left to be found.
 | **Router-batched unsigned users share one bucket** | Any of them can sign a zero-standing credential, which is free and permissionless, to isolate themselves. |
 | **Opening-leg blindness** | `beforeSwap` fires before delta accounting, so the hook never sees the first leg of a composite operation. This is a v4 property, not a defect in the hook. |
 | **No LP outcome claim** | See [above](#what-this-claims-and-what-it-does-not). |
+| **The mechanism binds less on volatile pairs, not more** | On the two volatile pools measured, the flow the mechanism targets is *smaller* than on USDC/WETH: one-sided volume is 1.3% there, 0.8% on PEPE/WETH and 0.1% on LINK/WETH. On PEPE, 19.8% of volume comes from addresses too new to be measured, against 7.7% on USDC/WETH, so base depth falls on ordinary traders instead. The bite is pool-specific rather than volatility-specific. [Detail](analysis/mainnet-replay.md). |
+| **The volatile samples are thin** | 10 and 9 addresses clear N = 20 on PEPE/WETH and LINK/WETH. That is enough to show a direction, not enough to be a population. A wider block range would test it properly and was not run. |
 | **One address holds standing on the demo pool** | A fresh wallet gets base depth, which is the correct behaviour and is what the app shows. |
 
 ---

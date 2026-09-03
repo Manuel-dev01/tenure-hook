@@ -105,9 +105,14 @@ that. A pool with a different flow mix could look very different, and we have no
 
 ## 4. Nobody reaches full depth
 
-**0 of 52** addresses with standing reach the top of the curve. The highest observed is 9277 bps
-(balance 9239). `FULL_DEPTH_STANDING = 10000` requires *perfect* directional balance, which no real
-address achieves over a large sample.
+**0 of 52** addresses with standing reach the top of the curve. The highest observed is 9778 bps
+of depth, from balance 9767 (`0x0250f06f...`, 42 buys and 44 sells). `FULL_DEPTH_STANDING = 10000`
+requires *perfect* directional balance, which no real address achieves over a large sample.
+
+**Corrected 2026-09-03.** This line previously said 9277 bps from balance 9239, which was the
+maximum over the top-twelve-by-volume table above rather than over all 52 addresses. The claim it
+supports, that nobody reaches full depth, is unaffected: 9778 is still short of 10000. Found by
+re-running the analysis for the second pool and diffing against the published figures.
 
 Recorded as an observation, **not acted on**. Stage 4 and 5 are measurement stages and the
 mechanism is frozen. If the curve were ever revisited, this is the input.
@@ -176,3 +181,105 @@ That is a genuine operational caveat and it belongs on camera.
   been capped is unknowable, and modelling it means choosing assumptions that determine the answer.
 - that one-sided flow is materially large on pools generally. Here it is 1.3% of volume. One pool,
   one window.
+
+
+---
+
+## 8. A second pool, volatile, because the theme is about volatile pairs
+
+**Why this section exists.** Everything above runs on USDC/WETH 0.05%, the deepest and most
+efficient pool on Ethereum. That is where the theme's problem is *least* acute, so the evidence and
+the motivation were on different pairs. This adds two volatile alt/WETH pools over the **same pinned
+range, the same N = 20, the same constants and the same code path.** Only the pool address changes.
+
+**Why USDC/WETH was chosen first:** log density. It carries 15,804 swaps in the pinned 20,000-block
+range against roughly 1,400 for the busiest volatile pair, so it is the only pool in this range with
+enough repeat addresses to say anything about standing at all.
+
+### Candidates, and why these two
+
+Sampled over a 2,000-block window inside the pinned range, then projected:
+
+| pool | swaps in 2,000 blocks | distinct | projected over 20,000 |
+|---|---|---|---|
+| USDC/WETH 0.05% (incumbent) | 1,388 | 144 | ~13,880 |
+| **PEPE/WETH 0.30%** | **150** | **35** | **~1,500** |
+| **LINK/WETH 0.30%** | **150** | **33** | **~1,500** |
+| SHIB/WETH 0.30% | 74 | 25 | ~740 |
+| APE/WETH 0.30% | 68 | 16 | ~680 |
+| UNI/WETH 0.30% | 65 | 16 | ~650 |
+| AAVE/WETH 0.30% | 63 | 17 | ~630 |
+| WBTC/WETH 0.30% | 59 | 16 | ~590 |
+| MKR/WETH 0.30% | 42 | 14 | ~420 |
+| LDO/WETH 0.30% | 33 | 13 | ~330 |
+| ENS/WETH 0.30% | 28 | 12 | ~280 |
+| CRV/WETH 0.30% | 0 | 0 | ~0 |
+
+PEPE and LINK were the only volatile pairs dense enough to be measurable. **Both** were run rather
+than one, because a single volatile pool cannot distinguish a property of volatility from a property
+of that pool. That turned out to matter.
+
+### The comparison
+
+Volume is measured on the USDC leg for USDC/WETH and the WETH leg for the alt pairs. Every share
+below is unit-free, so the comparison does not depend on that choice.
+
+| measure | USDC/WETH 0.05% | PEPE/WETH 0.30% | LINK/WETH 0.30% |
+|---|---|---|---|
+| swaps in the pinned range | 15,804 | 1,446 | 1,016 |
+| distinct addresses | 906 | 132 | 89 |
+| clear N = 20 | **52** (5.7%) | **10** (7.6%) | **9** (10.1%) |
+| their share of volume | 92.3% | 80.2% | 94.5% |
+| **volume-weighted mean depth** | **6721 bps** | **6376 bps** | **8779 bps** |
+| swap-weighted mean depth | 5984 bps | 5440 bps | 7456 bps |
+| highest standing observed | 9767 bps | 9662 bps | 9936 bps |
+| at full depth | 0 of 52 | 0 of 10 | 0 of 9 |
+
+Volume by accessible-depth band:
+
+| band | USDC/WETH | PEPE/WETH | LINK/WETH |
+|---|---|---|---|
+| 0–1999 bps | 8.8% | **20.6%** | 5.6% |
+| 2000–3999 bps | 0.6% | 0.0% | 0.0% |
+| 4000–5999 bps | 13.8% | 12.3% | 4.7% |
+| 6000–7999 bps | 41.5% | 35.0% | 2.3% |
+| 8000–9999 bps | 35.3% | 32.1% | **87.4%** |
+
+Low-band decomposition, the part that matters:
+
+| | USDC/WETH | PEPE/WETH | LINK/WETH |
+|---|---|---|---|
+| **measured and one-sided, the target** | **1.3%** (13 addr) | **0.8%** (2 addr) | **0.1%** (1 addr) |
+| too little history to measure | 7.7% (854 addr) | **19.8%** (122 addr) | 5.5% (80 addr) |
+| median swap size | 7,724.70 USDC | 2.47 WETH | 13.92 WETH |
+
+### What this shows, including the part that does not help us
+
+**1. The theme's thesis is not confirmed, and we are not going to claim it is.** If volatile pairs
+were where one-sided flow concentrates, the target share would rise. It falls, on both pools:
+**1.3% on USDC/WETH, 0.8% on PEPE, 0.1% on LINK.** The mechanism does not bind harder where the
+theme says the problem is worst. It binds *less*.
+
+**2. On PEPE the collateral cost more than doubles.** 19.8% of volume comes from addresses with too
+little history to be measured, against 7.7% on USDC/WETH. On a thinner pool a much larger share of
+flow is one-off, so base depth catches ordinary traders rather than the flow the mechanism is aimed
+at. **This is a limitation and it is now in the README's limitations table.**
+
+**3. LINK contradicts PEPE, which is why two pools were run.** Its unmeasured share is 5.5%, *lower*
+than USDC/WETH, and its volume-weighted depth is 8779 bps, well *above* USDC/WETH's 6721. Had only
+PEPE been run, "volatile pools have more unmeasurable flow" would have looked like a finding. It is
+not one.
+
+**4. The honest conclusion: the mechanism's bite is pool-specific, not volatility-specific.** The
+spread across these three pools is far wider than any stable-versus-volatile split, and it tracks how
+concentrated flow is among repeat addresses rather than how volatile the asset is. LINK's flow is
+dominated by a few balanced repeat traders, so almost all of its volume sits in the top band. PEPE's
+is dominated by one-off wallets, so a fifth of its volume cannot be measured at all.
+
+**5. The sample is thin and that limits every claim above.** 10 and 9 qualifying addresses is not a
+population. The direction of the one-sided finding is consistent across all three pools, which is
+the most that should be read into it. A wider block range would test it properly and was not run.
+
+**What did not change:** the mechanism, the circuit, the hook, N = 20, the depth curve, or any
+constant. Only the pool address. The USDC/WETH figures above were re-derived by the same code as a
+control and reproduce the published numbers exactly, including the depth-band table.
