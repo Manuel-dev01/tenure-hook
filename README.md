@@ -118,7 +118,7 @@ forge script scripts/VerifyDemo.s.sol --rpc-url $RPC_URL
 (3) is the splitting attack and (4) is the anti-whitelist property. Those are the two properties
 most easily lost in a refactor, so they are asserted on chain rather than assumed.
 
-**What is not live: delivery, and only delivery.** The Brevis gateway is holding a finished, correct
+**What is not live: delivery, and only delivery.** The Brevis gateway holds a finished, correct
 result for our paid query. It decodes through the deployed registry's own `decodeOutput`, so you can
 check it without trusting us:
 
@@ -127,9 +127,7 @@ RPC=https://ethereum-sepolia-rpc.publicnode.com
 REG=0x03F05F1c89b9725F2AD775Aed85F60DD38af19B5
 OUT=0x308c6fbd6a14881af333649f17f2fde9cd75e2a60000001d0000000001425c5c000000000142a8ad
 
-cast call $REG \
-  'decodeOutput(bytes)(address,uint16,uint16,uint64,uint64)' \
-  $OUT --rpc-url $RPC
+cast call $REG   'decodeOutput(bytes)(address,uint16,uint16,uint64,uint64)'   $OUT --rpc-url $RPC
 
 0x308C6fbD6a14881Af333649f17f2FdE9cd75e2a6   # trader
 0                                            # balanceBps
@@ -138,30 +136,22 @@ cast call $REG \
 21145773                                     # toBlock
 ```
 
-`OUT` is the `circuit_output` field of the gateway's `GetQueryStatus` response for the query we paid
-for on Sepolia, and it matches the one-sided fixture's hand-computed expectation exactly. The proof
-is generated and the output is correct. What has not happened is Brevis submitting the aggregated
-proof on chain, so `brevisCallback` never fired.
+`OUT` is the `circuit_output` field of the gateway's response for the query we paid for, and it
+matches the one-sided fixture's hand-computed expectation exactly. What never happened is Brevis
+submitting the aggregated proof, so `brevisCallback` never fired.
 
-**This is not specific to the chain we chose.** Every BrevisRequest deployment Brevis documents was
-surveyed: Arbitrum, both Sepolia deployments, Optimism and BSC Testnet, plus BrevisProof on Arbitrum
-and Sepolia. All are unpaused with active provers registered. All show zero events over windows of
-up to 4,000,000 blocks, except ours, which shows exactly one: our own payment. The table, the
-control that makes an empty result mean empty, and the two limits on that claim are in
+**Not specific to the chain we chose.** Every BrevisRequest deployment Brevis documents was
+surveyed. All are unpaused with active provers registered, and all show zero events over windows of
+up to 4,000,000 blocks, except ours, which shows one: our own payment. The table, the control that
+makes an empty result mean empty, and the limits on that claim are in
 [`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
 
-Because delivery is outstanding, standing in the app is written by the operator registry, the second
-trust model behind the same interface. The figure it holds is not invented either: 9,375 bps over 32
-swaps is the *balanced* fixture's real circuit output, reproducible with `npm run prove -- balanced`.
-The app names which registry it reads, on every screen.
-
-If the callback ever fires it will record **0 bps for `0x308c6fbd...`**, the one-sided fixture, not
-9,375 for the balanced one. Two different fixtures, two different addresses, and the paid query is
-the one-sided one. Full record, including a measurement error we made and retracted:
-[`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
+So standing in the app is written by the operator registry, the second trust model behind the same
+interface, and the app names which registry it reads on every screen. Its figure is not invented
+either: 9,375 bps over 32 swaps is the balanced fixture's real circuit output, reproducible with
+`npm run prove -- balanced`.
 
 ---
-
 
 ## What this claims, and what it does not
 
@@ -231,44 +221,32 @@ An operator who sets the tranche too low pushes ordinary flow into the floor.
 
 ## A null result, and what survives it
 
-**What the theme claims.** That the hard problem lives on volatile pairs: pools that need to stay
-sustainable at low fees, where one-sided informed flow does the most damage.
+**The theme's claim:** the hard problem lives on volatile pairs, which must stay sustainable at low
+fees while one-sided informed flow does the most damage.
 
-**What we tested.** Whether Tenure binds harder there. Same N = 20, same constants, same code path,
-same pinned block range; only the pool address changes. USDC/WETH 0.05% as the incumbent, plus
-PEPE/WETH 0.30% and LINK/WETH 0.30%. Two volatile pools rather than one, because a single pool
-cannot separate a property of volatility from a property of that pool.
+**What we tested:** whether Tenure binds harder there. Same N = 20, same constants, same code path,
+same pinned range; only the pool changes. Two volatile pools, not one, because a single pool cannot
+separate a property of volatility from a property of that pool.
 
-**What we found.** The share of volume the mechanism actually targets, addresses measured and found
-one-sided, is **1.3% on USDC/WETH, 0.8% on PEPE, 0.1% on LINK.** It does not rise on the volatile
-pairs. On PEPE the collateral cost more than doubles, 19.8% of volume from addresses too new to
-measure against 7.7%; on LINK it *falls* to 5.5%, and LINK's volume-weighted depth of 8779 bps is
-well above USDC/WETH's 6721.
+**What we found:** the targeted share of volume does not rise on the volatile pairs. It falls, from
+1.3% to 0.8% to 0.1%. On PEPE the incidental cost more than doubles, 19.8% of volume from addresses
+too new to measure against 7.7%; on LINK it falls to 5.5%.
 
-**This is a null result, not a refutation.** Ten and nine addresses clear N = 20 on the two volatile
-pools. That is a direction, not a population, and it cannot refute the theme's claim any more than
-it can confirm it. What it does rule out is us asserting the claim as measured, which is what a
-one-pool result would have let us do.
+**This is a null result, not a refutation.** Ten and nine addresses clear N = 20 on the volatile
+pools. That is a direction, not a population. It cannot settle the theme's claim either way, and
+what it rules out is our asserting that claim as measured.
 
-**Why the sample is thin, and why that is a disclosure rather than a choice.** The measurement runs
-on a pinned pre-Pectra range anchored at block 21,146,236. That range exists because
-`brevis-sdk v0.3.12` could not build receipt proofs over blocks containing EIP-7702 transactions, so
-the fixtures had to be cut from before Pectra
-([detail](analysis/pinned-proving-range.md)). Twenty thousand blocks of a single historical window
-is plenty on the busiest pool on Ethereum and thin everywhere else, so **the same disclosure that
-explains the block range also explains the sample size.** v0.3.33 pins a go-ethereum fork that does
-parse type 4 transactions, so the constraint is probably liftable, but the fixtures were never
-re-cut and we do not claim it is fixed. A wider range would test this properly and was not run.
+**The sample size is a disclosure, not a choice.** The pinned pre-Pectra range exists because
+`brevis-sdk v0.3.12` could not build receipt proofs over blocks containing EIP-7702 transactions
+([detail](analysis/pinned-proving-range.md)). Twenty thousand blocks of one historical window is
+plenty on the busiest pool on Ethereum and thin everywhere else, so the disclosure that explains the
+block range also explains the sample.
 
-**What survives, and it is the part that matters.** The two properties the mechanism is actually
-built on are **pool-independent and separately proven**: the cap **binds**, and it **cannot be split
-around**. Those hold in the three-arm A/B, in 44 tests, and against the deployed Sepolia contracts,
-matched by error selector. Nothing in the two-pool result touches them.
-
-What varies between pools is only **how much flow the cap catches**, and across these three that
-tracks how concentrated volume is among repeat addresses rather than how volatile the asset is.
-LINK's volume sits almost entirely in the top band because a few balanced repeat traders dominate
-it. PEPE's does not, because one-off wallets do.
+**What survives is what the mechanism rests on.** The cap **binds** and **cannot be split around**.
+Both are pool-independent and proven separately: in the three-arm A/B, in 44 tests, and against the
+deployed contracts matched by error selector. Nothing in the two-pool result touches them. What
+varies is only how much flow the cap catches, and across these three that tracks how concentrated
+volume is among repeat addresses rather than how volatile the asset is.
 
 ---
 
@@ -309,26 +287,24 @@ Every one we know of, stated here rather than left to be found.
 
 | Limitation | Detail |
 |---|---|
-| **No proof has landed on chain** | Every step we own works: the circuit proves standing, the proof verifies against its verifying key, the gateway accepts the query, the fee is paid on Sepolia, and the gateway holds a correct decodable result for it. Brevis never submitted the aggregated proof, so the callback never fired and standing in the app is operator-written. No BrevisRequest deployment we could reach shows any fulfilment traffic, so this is not specific to the chain we chose. [Record](analysis/brevis-gateway-diagnosis.md). |
-| **Proof fixtures use a historical block range** | `brevis-sdk v0.3.12` could not build receipt proofs for blocks containing EIP-7702 transactions, so the fixtures are cut from a pinned pre-Pectra range anchored at block 21,146,236. v0.3.33 pins a go-ethereum fork that does parse type 4, so the constraint is probably lifted, but the fixtures were never re-cut and we do not claim it is fixed. [Detail](analysis/pinned-proving-range.md). |
+| **No proof has landed on chain** | Every step we own works, through to a correct result held by the gateway. Brevis never submitted the aggregated proof, and no deployment we could reach shows fulfilment traffic, so standing in the app is operator-written. [Record](analysis/brevis-gateway-diagnosis.md). |
+| **Proof fixtures use a historical block range** | `brevis-sdk v0.3.12` could not build receipt proofs over blocks containing EIP-7702 transactions, so the fixtures come from a pinned pre-Pectra range anchored at block 21,146,236. v0.3.33 pins a geth fork that does parse type 4, so the constraint is probably lifted, but the fixtures were never re-cut and we do not claim it is fixed. [Detail](analysis/pinned-proving-range.md). |
 | **Cross-transaction splitting still evades the cap** | Transient storage is transaction-scoped, so it clears between transactions. This costs gas and gives up atomicity. |
 | **Router-batched unsigned users share one bucket** | Any of them can sign a zero-standing credential, which is free and permissionless, to isolate themselves. |
 | **Opening-leg blindness** | `beforeSwap` fires before delta accounting, so the hook never sees the first leg of a composite operation. This is a v4 property, not a defect in the hook. |
 | **No LP outcome claim** | See [above](#what-this-claims-and-what-it-does-not). |
-| **No evidence that the mechanism binds harder on volatile pairs** | A null result, not a refutation. On the two volatile pools measured, the targeted flow is *smaller* than on USDC/WETH: one-sided volume is 1.3% there, 0.8% on PEPE/WETH, 0.1% on LINK/WETH. On PEPE, 19.8% of volume comes from addresses too new to measure against 7.7%, so base depth falls on ordinary traders instead; on LINK that figure is 5.5%, lower than USDC/WETH. Across these three the bite tracks concentration of flow among repeat addresses rather than volatility. [Detail](analysis/mainnet-replay.md). |
-| **The volatile samples are thin** | 10 and 9 addresses clear N = 20 on PEPE/WETH and LINK/WETH. That is a direction, not a population, and it cannot settle the question either way. The cause is the pinned pre-Pectra range, which exists because `brevis-sdk v0.3.12` could not parse EIP-7702 transactions; 20,000 blocks is plenty on the busiest pool and thin everywhere else. A wider range would test it properly and was not run. [Detail](analysis/pinned-proving-range.md). |
+| **No evidence that the mechanism binds harder on volatile pairs** | A null result, not a refutation. Targeted flow is *smaller* on both volatile pools: 1.3% on USDC/WETH, 0.8% on PEPE, 0.1% on LINK. On PEPE, 19.8% of volume is too new to measure against 7.7%, so base depth falls on ordinary traders; on LINK that figure is 5.5%. [Detail](analysis/mainnet-replay.md). |
+| **The volatile samples are thin** | 10 and 9 addresses clear N = 20 on PEPE and LINK: a direction, not a population. Caused by the pinned range above, which is ample on the busiest pool and thin elsewhere. A wider range would settle it and was not run. |
 | **One address holds standing on the demo pool** | A fresh wallet gets base depth, which is the correct behaviour and is what the app shows. |
 
 ---
 
 ## Partner integrations
 
-**Brevis is the one partner integration, and it is running code.** The circuit is written and
-compiles to 1,601,003 constraints. It proves standing from real Ethereum mainnet swap logs, and the
-proof verifies against its verifying key. The verifying-key hash is set on the deployed Sepolia
-registry, which enforces it on every callback. Two fixtures were proved and each matched a figure
-computed from the raw logs outside the circuit. What is not complete is the last leg, Brevis
-delivering the aggregated proof on chain. Detail, with transaction hashes:
+**Brevis is the one partner integration, and it is running code**: a 1,601,003-constraint circuit
+proving standing from real mainnet swap logs, verifying against its verifying key, whose hash is set
+and enforced on the deployed registry. Only the last leg, Brevis delivering the aggregated proof on
+chain, is incomplete. Detail with transaction hashes:
 [`analysis/brevis-gateway-diagnosis.md`](analysis/brevis-gateway-diagnosis.md).
 
 | Partner | Where | What it does |
@@ -340,7 +316,7 @@ delivering the aggregated proof on chain. Detail, with transaction hashes:
 | **Brevis** | `src/TenureRegistry.sol:83` | `handleProofResult`, the ZK callback, with `_vkHash` validated |
 | **Brevis** | `src/lib/BrevisAppZkOnly.sol:9` | vendored `BrevisAppZkOnly` callback base |
 
-What each of those does, in order, and where the flow stops:
+Where the flow stops:
 
 ```
 directional_balance.go   circuit over mainnet swap logs        written, 1,601,003 constraints
@@ -351,13 +327,12 @@ Brevis gateway            hold the finished result               QS_PAID, output
 TenureRegistry.sol:83    brevisCallback records standing        never fired
 ```
 
-The registry is deployed with the verifying-key hash enforced, so it is ready for that callback.
-`expectedVkHash` starts at zero and every callback reverts until it is set, which makes an unset key
-fail closed rather than accept a proof from any circuit.
+`expectedVkHash` starts at zero and every callback reverts until it is set, so an unset key fails
+closed rather than accepting a proof from any circuit.
 
 ### Dependencies
 
-Not partners, listed separately so the table above is not padded.
+Not partners. Listed separately so the table above is not padded.
 
 | Dependency | Where | What it does |
 |---|---|---|
@@ -365,16 +340,13 @@ Not partners, listed separately so the table above is not padded.
 | **Uniswap v4** | `src/TenureHook.sol:136` | `getHookPermissions`, beforeSwap only, no fee power |
 | **OpenZeppelin** | `src/TenureHook.sol:37` | `uniswap-hooks` v1.0.0 `BaseHook` |
 
-Uniswap v4 is the base protocol this is built on rather than an integration, and OpenZeppelin is a
-library dependency. Neither is a UHI10 sponsor.
+v4 is the base protocol rather than an integration; OpenZeppelin is a library. Neither is a UHI10
+sponsor.
 
-These `file:line` pointers are **machine checked** on every CI run by `scripts/check_pointers.py`,
-because `forge fmt` reflows source files and a pointer that was correct when written drifts
-silently.
-
-Attribution for vendored upstream code, and which files are ours versus upstream's:
-[`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md). The circuit, the prover entrypoint's configuration
-and the proving script are ours. The surrounding scaffolding is upstream's quickstart.
+Every `file:line` pointer above is **machine checked** on each CI run by
+`scripts/check_pointers.py`, because `forge fmt` reflows source files and a correct pointer drifts
+silently. Which files are ours and which are upstream's:
+[`brevis/ATTRIBUTION.md`](brevis/ATTRIBUTION.md).
 
 ---
 
