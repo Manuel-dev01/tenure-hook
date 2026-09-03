@@ -21,17 +21,31 @@ PATTERN = re.compile(r"\]\((\.{0,2}/?[A-Za-z0-9_./-]+\.(?:md|sol|go|ts|json|py|s
 
 def tracked_markdown():
     """Only what ships. Untracked working notes may legitimately reference files that were removed
-    from the repository, and failing the gate on those would punish keeping local notes."""
+    from the repository, and failing the gate on those would punish keeping local notes.
+
+    Falls back to walking the tree when git is unavailable. A GitHub ZIP download is not a git
+    repository, and someone evaluating this project that way should get a link check that works
+    rather than a hard gate failure about `git ls-files`. In that mode the tracked-ness assertion
+    below cannot be made, so it is skipped and said out loud.
+    """
     out = subprocess.run(["git", "ls-files", "*.md"], capture_output=True, text=True)
-    if out.returncode != 0:
-        raise SystemExit("  git ls-files failed; run this inside the repository")
-    return [p for p in out.stdout.splitlines() if p.strip()]
+    if out.returncode == 0:
+        return [p for p in out.stdout.splitlines() if p.strip()], True
+    print("  note: not a git repository, falling back to a filesystem walk")
+    print("  (tracked-ness of link targets cannot be checked in this mode)")
+    found = []
+    for root, dirs, files in os.walk("."):
+        dirs[:] = [d for d in dirs if d not in (".git", "lib", "node_modules", "out", "cache")]
+        found += [os.path.join(root, f) for f in files if f.endswith(".md")]
+    return found, False
 
 
 bad = []
 checked = 0
 
-for path in tracked_markdown():
+paths, have_git = tracked_markdown()
+
+for path in paths:
     root = os.path.dirname(path) or "."
     text = io.open(path, encoding="utf-8", errors="ignore").read()
     for m in PATTERN.finditer(text):
@@ -40,7 +54,7 @@ for path in tracked_markdown():
         # A link must point at something that SHIPS, not merely something on this disk.
         if not os.path.exists(target):
             bad.append("%s -> %s  (missing)" % (path, m.group(1)))
-        elif os.path.isfile(target):
+        elif have_git and os.path.isfile(target):
             chk = subprocess.run(["git", "ls-files", "--error-unmatch", target],
                                  capture_output=True, text=True)
             if chk.returncode != 0:

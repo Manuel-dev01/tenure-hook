@@ -196,7 +196,10 @@ it wrong is worse than not deploying. Total cost on Sepolia was about 0.016 ETH.
 
 | Symptom | Fix |
 |---|---|
-| `lib/ is empty` | `git submodule update --init --recursive` |
+| `lib/ is empty` | `git submodule update --init --recursive`. **`--recursive` is not optional:** `remappings.txt` maps `solmate/` into `lib/v4-core/lib/solmate`, a submodule of v4-core, so a non-recursive init builds `src/` but fails the tests. |
+| `Source "lib/v4-core/lib/solmate/..." not found` | Same cause. The nested submodule was not fetched. |
+| Windows: `Filename too long` during clone | Clone to a short path such as `C:\src`. The recursive fetch nests to `lib/uniswap-hooks/lib/v4-core/lib/forge-std/...`, which exceeds the 260-character limit from a deep directory. Reproduced; it is a Windows path limit, not a repository problem. `git config --global core.longpaths true` also works. |
+| Downloaded as a ZIP rather than cloned | The ZIP has no `lib/`, so nothing builds. Clone instead. The claim gate degrades gracefully outside git and says so, rather than failing on `git ls-files`. |
 | `forge not found` | Install Foundry, or `export PATH=$PATH:$HOME/.foundry/bin` |
 | Tests reported as skipped | You dropped `--isolate`. The gate treats a skip as a failure. |
 | Prover not listening on :33247 | `cd brevis/prover && go run ./cmd/main.go`. The first run does a setup of a few minutes. |
