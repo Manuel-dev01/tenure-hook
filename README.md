@@ -355,6 +355,7 @@ silently. Which files are ours and which are upstream's:
 | Document | What it is for |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the design, the two flows, and the v4 constraints that shaped them |
+| [`docs/`](docs/) | **the published site, not documentation.** GitHub Pages serves the landing page and app from this folder, which is one of only two paths branch-based Pages supports |
 | [DEMO.md](DEMO.md) | run and verify every claim yourself |
 | [VERIFY.md](VERIFY.md) | the verification protocol used at every stage of the build |
 | [`analysis/mainnet-replay.md`](analysis/mainnet-replay.md) | the impact figures, on 15,804 real swaps |

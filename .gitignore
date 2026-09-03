@@ -66,3 +66,6 @@ brevis/contracts/
 
 # Foundry writes a timestamped copy beside run-latest.json. One record is enough.
 broadcast/**/run-[0-9]*.json
+
+# Presentation aids: 5 MB of screen capture, regenerable with presentation/clips.js
+presentation/
